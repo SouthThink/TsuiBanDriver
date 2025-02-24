@@ -9,7 +9,6 @@
         :videoId="videoId"
         :style="style"
       />
-      <!-- <text-player :style="style" /> -->
     </div>
     <div class="bangumiList">
       <BangumiCollapse :AnimeId="AnimeId" :Id="videoId"/>
@@ -19,7 +18,6 @@
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
-import TextPlayer from '@/components/textPlayer.vue';
 export default {
   data() {
     return {
@@ -45,7 +43,6 @@ export default {
   components: {
     Artplayer,
     BangumiCollapse,
-    TextPlayer,
   },
   beforeCreate() {
     console.log("beforeCreate");

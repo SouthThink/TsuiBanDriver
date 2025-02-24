@@ -71,10 +71,15 @@ export default {
     routeToVideo(e) {
       //   console.log(e);
       //   console.log(e.Id);
-      this.$router.push({
+      // this.$router.push({
+      //   name: "video",
+      //   query: { videoId: e.Id, AnimeId: e.AnimeId },
+      // });
+      const route = this.$router.resolve({
         name: "video",
         query: { videoId: e.Id, AnimeId: e.AnimeId },
       });
+      window.open(route.href, "_blank");
     },
     showBangumiList(e) {
       this.bangumiList = [];
@@ -92,7 +97,7 @@ export default {
       });
     },
     isSelected(e) {
-      return e.Id == this.Id? 'primary' : '';
+      return e.Id == this.Id ? "primary" : "";
     },
   },
 };

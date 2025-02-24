@@ -11,6 +11,7 @@
           :value="item.type"
           @click="getVideoList(item.type)"
           size="default"
+          class="nav-item-button"
         >
           {{ item.name }}
         </el-radio-button>
@@ -210,7 +211,14 @@ export default {
 .nav-item {
   margin-top: 10px;
   scrollbar-width: none;
+  overflow: scroll;
 }
+
+.nav-item-button:deep(.el-radio-button__inner){
+  border-radius: 20px;
+  margin-right: 10px;
+}
+
 .search {
   margin-top: 10px;
   max-width: 498px;
