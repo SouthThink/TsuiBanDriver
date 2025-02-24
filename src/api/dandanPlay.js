@@ -1,39 +1,40 @@
 import request from "@/utils/request";
 
-export function welcome(data) {
-  return request({
+const BASE_URL = '/api';
+
+export function welcome(params) {
+  return request(BASE_URL,{
     url: "/api/v1/welcome",
     method: "get",
-    data,
+    params,
   });
 }
 
-export function library(data) {
-  return request({
+export function library(params) {
+  return request(BASE_URL,{
     url: "/api/v1/library",
     method: "get",
-    data,
+    params,
   });
 }
 
-export function subtitle(data) {
-  return request({
-    url: "/api/v1/subtitle/info/" + data,
-    method: "get"
-  });
-}
-
-
-export function bangumi(data) {
-  return request({
-    url: "/api/v1/library/v2/bangumi/list/nav:" + data,
+export function bangumi(params) {
+  return request(BASE_URL,{
+    url: "/api/v1/library/v2/bangumi/list/nav:" + params,
     method: "get",
   });
 }
 
-export function bangumiList(data) {
-  return request({
-    url: "/api/v1/library/v2/bangumi/details/" + data,
+export function bangumiList(params) {
+  return request(BASE_URL,{
+    url: "/api/v1/library/v2/bangumi/details/" + params,
+    method: "get",
+  });
+}
+
+export function subtitle(params) {
+  return request("/web1",{
+    url: "/subtitle/" + params,
     method: "get",
   });
 }

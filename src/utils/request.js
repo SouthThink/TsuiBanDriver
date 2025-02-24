@@ -1,8 +1,6 @@
 import http from 'axios';
 
-const BASE_URL = '/api';
-
-function request(config) {
+function request(BASE_URL,config) {
   const token = localStorage.getItem('token') || '';
   if(token){
     config.params = config.params || {};
@@ -13,6 +11,7 @@ function request(config) {
       url: BASE_URL + config.url,
       method: config.method || 'GET',
       params: config.params,
+      data: config.data,
       headers: {
         "Authorization": token
       },

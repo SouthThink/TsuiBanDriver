@@ -61,37 +61,14 @@
               v-for="video in videoList[item]"
               :key="video.Id"
             >
-              <div @click="showDrawer(video)" class="bangumi-item">
-                <div class="bangumi-item-cover">
-                  <el-image
-                    :src="'/api' + video.Cover"
-                    fit="cover"
-                    class="bangumi-item-img"
-                  >
-                  </el-image>
-                  <div class="bangumi-item-score">
-                    <el-icon><StarFilled /></el-icon>
-                    <el-text style="color: white">{{ video.Rating }}</el-text>
-                  </div>
-                  <div
-                    class="bangumi-item-watched"
-                    v-show="video.EpisodeWatched !== 0"
-                  >
-                    <el-icon><Clock /></el-icon>
-                    <el-text
-                      style="color: white"
-                      v-if="video.EpisodeWatched != video.EpisodeTotal"
-                      >已看到第{{ video.EpisodeWatched }}话</el-text
-                    >
-                    <el-text style="color: white" v-else>已看到最新</el-text>
-                  </div>
-                </div>
-                <div class="bangumi-item-info">
-                  <el-text line-clamp="2" truncated class="bangumi-item-title">
-                    {{ video.Title }}
-                  </el-text>
-                </div>
-              </div>
+              <BangumiCardRow
+                @click="showDrawer(video)"
+                :imgUrl="'/api' + video.Cover"
+                :title="video.Title"
+                :rating="video.Rating"
+                :episodeWatched="video.EpisodeWatched"
+                :episodeTotal="video.EpisodeTotal"
+              />
             </el-col>
           </el-row>
         </div>
@@ -101,8 +78,8 @@
     <el-drawer
       v-model="showBangumi"
       :title="bangumiTitle"
-      direction="rtl"
-      size="45%"
+      direction="btt"
+      size="60%"
     >
       <BangumiCollapse :AnimeId="AnimeId" />
     </el-drawer>
@@ -112,6 +89,7 @@
 <script>
 import { bangumi } from "@/api/dandanPlay";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
+import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 export default {
   data() {
     return {
@@ -141,6 +119,7 @@ export default {
   },
   components: {
     BangumiCollapse,
+    BangumiCardRow,
   },
   computed: {
     drawerSize() {
@@ -212,9 +191,10 @@ export default {
   margin-top: 10px;
   scrollbar-width: none;
   overflow: scroll;
+  flex-wrap: nowrap;
 }
 
-.nav-item-button:deep(.el-radio-button__inner){
+.nav-item-button:deep(.el-radio-button__inner) {
   border-radius: 20px;
   margin-right: 10px;
 }
@@ -228,16 +208,6 @@ export default {
   font-size: 1.5em;
   font-weight: bold;
 }
-.bangumi-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-radius: 10px;
-}
-.bangumi-item:hover {
-  /* 放大且加阴影 */
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(70, 70, 70, 0.3);
-}
-
 .bangumi-card-row {
   margin-top: 6px;
 }
@@ -253,6 +223,15 @@ export default {
   margin-top: 10px;
   margin-bottom: 10px;
   cursor: pointer;
+}
+.bangumi-item {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 10px;
+}
+.bangumi-item:hover {
+  /* 放大且加阴影 */
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(70, 70, 70, 0.3);
 }
 .bangumi-item-cover {
   padding: 0px;

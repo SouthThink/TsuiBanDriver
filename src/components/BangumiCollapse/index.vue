@@ -69,17 +69,18 @@ export default {
       //   console.log(e);
     },
     routeToVideo(e) {
-      //   console.log(e);
-      //   console.log(e.Id);
-      // this.$router.push({
-      //   name: "video",
-      //   query: { videoId: e.Id, AnimeId: e.AnimeId },
-      // });
-      const route = this.$router.resolve({
-        name: "video",
-        query: { videoId: e.Id, AnimeId: e.AnimeId },
-      });
-      window.open(route.href, "_blank");
+      if (this.$route.path == "/video") {
+        this.$router.push({
+          name: "video",
+          query: { videoId: e.Id, AnimeId: e.AnimeId },
+        });
+      } else {
+        const route = this.$router.resolve({
+          name: "video",
+          query: { videoId: e.Id, AnimeId: e.AnimeId },
+        });
+        window.open(route.href, "_blank");
+      }
     },
     showBangumiList(e) {
       this.bangumiList = [];
@@ -97,7 +98,13 @@ export default {
       });
     },
     isSelected(e) {
-      return e.Id == this.Id ? "primary" : "";
+      if (e.Id == this.Id) {
+        this.$emit("getTitle", e.AnimeTitle + " " + e.EpisodeTitle);
+        console.log(e);
+        return "primary";
+      } else {
+        return "default";
+      }
     },
   },
 };

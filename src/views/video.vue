@@ -1,7 +1,7 @@
 <template>
   <div class="video">
     <div class="videoInfo">
-      <h1>视频信息</h1>
+      <el-text size="large" class="title">{{ title }}</el-text>
     </div>
     <div class="player">
       <Artplayer
@@ -11,28 +11,31 @@
       />
     </div>
     <div class="bangumiList">
-      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId"/>
+      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle"/>
     </div>
   </div>
 </template>
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
+import {subtitle} from "@/api/dandanPlay.js";
 export default {
   data() {
     return {
       style: {
-        width: "60vw",
+        width: "100%",
         aspectRatio: "16 / 9",
       },
       videoId: "",
       AnimeId: "",
       bangumiList: [],
+      title: "",
     };
   },
   watch: {
     $route: {
       handler: function (route) {
+        this.title = "";
         this.videoId = route.query.videoId;
         this.AnimeId = route.query.AnimeId;
         console.log("watch", this.videoId, this.AnimeId);
@@ -52,16 +55,32 @@ export default {
     console.log("mounted", this.$route.query.AnimeId);
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
+    subtitle(this.videoId).then(
+      (res) => {
+        console.log(res);
+      },
+      (err) => {
+        console.log(err);
+      }
+    )
   },
   methods: {
     getInstance(art) {
       console.info("播放器信息", art);
     },
+    setTitle(title) {
+      this.title = title;
+      //设置页面标题
+      document.title = title;
+    }
   },
 };
 </script>
 
 <style scoped>
+.video{
+  margin: auto;
+}
 .videoInfo {
   width: 60vw;
   height: 100px;
@@ -70,6 +89,10 @@ export default {
   line-height: 100px;
   border-bottom: 1px solid #ccc;
 }
+.title{
+  font-size: 24px;
+  font-weight: bold;
+}
 .bangumiList {
   width: 60vw;
   margin: 0 auto;
@@ -77,5 +100,30 @@ export default {
 .player {
   width: 60vw;
   position: relative;
+}
+/* 宽度小于1000px时 */
+@media screen and (max-width: 1000px) {
+  .videoInfo {
+    width: 80vw;
+  }
+  .bangumiList {
+    width: 80vw;
+  }
+  .player {
+    width: 80vw;
+  }
+}
+
+/* 宽度小于767px时 */
+@media screen and (max-width: 767px) {
+  .videoInfo {
+    width: 90vw;
+  }
+  .bangumiList {
+    width: 90vw;
+  }
+  .player {
+    width: 90vw;
+  }
 }
 </style>
