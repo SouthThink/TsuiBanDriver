@@ -4,9 +4,7 @@
 
 <script>
 import Artplayer from "artplayer";
-import { subtitle } from "@/api/dandanPlay";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
-import artplayerPluginLibass from "artplayer-plugin-libass";
 
 export default {
   data() {
@@ -18,9 +16,6 @@ export default {
     videoId: {
       handler(newVal) {
         console.log("监听视频id", newVal);
-        // if (newVal != "" && this.instance) {
-        //   this.instance.url = `/api/api/v1/stream/id/${newVal}`;
-        // }
         this.InitPlayer();
       },
       immediate: true,
@@ -33,24 +28,10 @@ export default {
     },
   },
   mounted() {
-    // this.getDanmaku(this.videoId);
     // this.getSubtitle(videoId);
     // this.InitPlayer();
   },
   methods: {
-    getDanmaku(art) {
-      art.notice.show = "弹幕加载中";
-      console.log("视频id", this.videoId);
-      danmaku(this.videoId).then((res) => {
-        art.danmaku = res;
-        console.log("获取的弹幕", art);
-        art.notice.show = "弹幕加载完成";
-      });
-    },
-    async getSubtitle(videoId) {
-      let res = await subtitle(videoId);
-      console.log("获取的字幕", res);
-    },
     //初始化播放器
     InitPlayer() {
       console.log("初始化播放器");
@@ -62,7 +43,27 @@ export default {
           // 视频封面地址
           poster: `/api/api/v1/image/id/${this.videoId}`,
           // 字幕
-          subtitle: {},
+          subtitle: {
+            url: `/web1/subtitle/${this.videoId}/ass`,
+            type: "ass",
+            encoding: "utf-8",
+            escape: true,
+            style: {
+              // color: "#03A9F4",
+              "font-size": "14px",
+            },
+          },
+          //设置
+          setting: true,
+          settings: [
+            {
+              html: "字幕",
+              tooltip: "显示",
+              icon: '<img width="22" heigth="22" src="/img/subtitle.svg">',
+              switch: true,
+              onSwitch: this.subtitleChange,
+            },
+          ],
           // 视频容器
           container: this.$refs.artRef,
           // 视频id
@@ -121,7 +122,7 @@ export default {
           theme: "#23ade5",
           plugins: [
             artplayerPluginDanmuku({
-              ...JSON.parse(localStorage.getItem('danmuku') || '{}'),
+              ...JSON.parse(localStorage.getItem("danmuku") || "{}"),
               danmuku: `/api/api/v1/comment/id/${this.videoId}`,
               // speed: 10, // 弹幕持续时间，范围在[1 ~ 10]
               // margin: [10, "25%"], // 弹幕上下边距，支持像素数字和百分比
@@ -170,7 +171,6 @@ export default {
         this.$nextTick(() => {
           this.$emit("get-instance", this.instance);
         });
-        // this.getDanmaku(this.instance);
         this.instance.on("artplayerPluginDanmuku:config", (option) => {
           // 排除不必要的选项，如mount
           const { mount, ...rest } = option;
@@ -186,6 +186,12 @@ export default {
         console.log("销毁播放器");
         this.instance.destroy();
       }
+    },
+    subtitleChange(item) {
+      console.log("字幕", item.switch);
+      item.tooltip = item.switch ? "隐藏" : "显示";
+      this.instance.subtitle.show = !item.switch;
+      return !item.switch;
     },
   },
   beforeUnmount() {

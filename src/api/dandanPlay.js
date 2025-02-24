@@ -34,7 +34,7 @@ export function bangumiList(params) {
 
 export function subtitle(params) {
   return request("/web1",{
-    url: "/subtitle/" + params,
+    url: "/subtitle/" + params + "/ass",
     method: "get",
   });
 }

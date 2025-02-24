@@ -51,18 +51,16 @@ export default {
     console.log("beforeCreate");
   },
   mounted() {
-    console.log("mounted", this.$route.query.videoId);
-    console.log("mounted", this.$route.query.AnimeId);
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
-    subtitle(this.videoId).then(
-      (res) => {
-        console.log(res);
-      },
-      (err) => {
-        console.log(err);
-      }
-    )
+    // subtitle(this.videoId).then(
+    //   (res) => {
+    //     console.log(res);
+    //   },
+    //   (err) => {
+    //     console.log(err);
+    //   }
+    // )
   },
   methods: {
     getInstance(art) {
