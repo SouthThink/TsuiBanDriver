@@ -18,6 +18,7 @@
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
+import { makeHistory } from "@/api/dandanPlay.js";
 import {subtitle} from "@/api/dandanPlay.js";
 export default {
   data() {
@@ -53,6 +54,14 @@ export default {
   mounted() {
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
+    makeHistory({id: this.videoId}).then(
+      (res) => {
+        console.log(res);
+      },
+      (err) => {
+        console.log(err);
+      }
+    )
     // subtitle(this.videoId).then(
     //   (res) => {
     //     console.log(res);

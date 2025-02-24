@@ -49,7 +49,7 @@ const props = defineProps({
 });
 
 onMounted(() => {
-  console.log(props.rating);
+  // console.log(props.rating);
 });
 
 </script>

@@ -125,8 +125,9 @@ export default {
 }
 .bangumi-collapse-item-button {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
 }
 .bangumi-collapse-item-button:deep(.el-button) {
   margin: 0;

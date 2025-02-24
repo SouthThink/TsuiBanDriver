@@ -38,3 +38,11 @@ export function subtitle(params) {
     method: "get",
   });
 }
+
+export function makeHistory(params) {
+  return request("/web1",{
+    url: "video.html",
+    method: "get",
+    params
+  });
+}
