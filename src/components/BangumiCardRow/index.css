@@ -1,0 +1,61 @@
+.bangumi-item {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 10px;
+  background-color: var(--el-button-bg-color,var(--el-fill-color-blank));
+  box-shadow: 0 0 10px rgba(128, 128, 128, 0.3);
+  margin-top: 10px;
+}
+.bangumi-item:hover {
+  /* 放大且加阴影 */
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(70, 70, 70, 0.3);
+}
+.bangumi-item-cover {
+  padding: 0px;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 10px;
+  position: relative;
+}
+.bangumi-item-img {
+  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+}
+.bangumi-item-score {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  padding: 0.25rem;
+  border-radius: 10px 0 0 0;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+.bangumi-item-watched {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  padding: 0.25rem;
+  border-radius: 0 0 0 10px;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.bangumi-item-info {
+  padding: 0.25rem;
+}
+.bangumi-item-title {
+  height: 50px;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: normal;
+}

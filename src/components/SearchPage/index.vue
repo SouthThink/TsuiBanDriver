@@ -1,54 +1,113 @@
 <template>
-  <div class="searchBox">
-    <el-input
-      v-model="input"
-      placeholder="请输入内容"
-      class="input-with-select"
-    ></el-input>
-    <el-button @click="searchAllInfoBtn" class="searchBtn">搜索</el-button>
-  </div>
-  <div class="result">
-    <el-row :gutter="24" class="bangumi-card-row">
-      <el-col
-        :xs="8"
-        :sm="6"
-        :md="4"
-        :lg="3"
-        v-for="video in resultList"
-        :key="video.Id"
-      >
-        <BangumiCardRow
-          :imgUrl="video.img"
-          :title="video.title"
-        />
-      </el-col>
-    </el-row>
+  <div class="searchPage">
+    <div class="searchBox">
+      <el-input
+        v-model="input"
+        placeholder="番剧搜索"
+        class="input-with-select"
+        :prefix-icon="Search"
+        @keyup.enter="searchAllInfoBtn"
+      />
+    </div>
+    <el-skeleton :loading="loading" animated :count="3">
+      <template #template> </template>
+      <template #default>
+        <div class="result" v-if="resultList.length > 0">
+          <el-row :gutter="24" class="bangumi-card-row" :loading="true">
+            <el-col
+              :xs="8"
+              :sm="6"
+              :md="4"
+              :lg="3"
+              v-for="video in resultList"
+              :key="video.Id"
+            >
+              <BangumiCardRow :imgUrl="video.img" :title="video.title" />
+            </el-col>
+          </el-row>
+        </div>
+      </template>
+    </el-skeleton>
   </div>
 </template>
 <script setup>
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
+import 'element-plus/dist/index.css';
+import "@/components/BangumiCardRow/index.css";
 import { searchAllInfo } from "@/api/download.js";
+import { Search } from "@element-plus/icons-vue";
+import { ElNotification } from "element-plus";
 import { ref } from "vue";
 
 const input = ref("");
 const resultList = ref([]);
+const loading = ref(false);
 
 const searchAllInfoBtn = () => {
+  loading.value = true;
   searchAllInfo({
     name: input.value,
-  }).then((res) => {
-    console.log(res);
-    resultList.value = res.data;
-  });
+  })
+    .then((res) => {
+      console.log(res);
+      resultList.value = res.data;
+      loading.value = false;
+    })
+    .catch((err) => {
+      loading.value = false;
+      ElNotification({
+        title: "搜索失败",
+        message: "请检查网络连接",
+        type: 'warning',
+      });
+    });
 };
 </script>
 <style scoped>
+.searchPage {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.searchBox {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 .input-with-select {
-  width: 400px;
-  margin: 20px;
+  width: 600px;
+  margin-bottom: 100px;
+}
+
+.input-with-select:deep(.el-input__wrapper) {
+  height: 50px;
+  border-radius: 25px;
+  border: 0px;
 }
 
 .searchBtn {
-  margin: 20px;
+  background-color: #409eff;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.result {
+  width: 100%;
+  padding: 20px;
+  margin-bottom: 100px;
+  box-sizing: border-box;
+}
+
+.bangumi-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 0 -10px;
 }
 </style>

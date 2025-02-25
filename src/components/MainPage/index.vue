@@ -29,7 +29,8 @@
         <div class="bangumi-card">
           <el-skeleton-item class="bangumi-card-title" variant="h3" />
           <el-row :gutter="24">
-            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="(item, index) in 6">
+            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="(item, index) in 6" 
+            style="padding-left: 5px;padding-right: 5px;">
               <div class="bangumi-item">
                 <el-skeleton-item
                   variant="image"
@@ -37,6 +38,7 @@
                   class="bangumi-item-img"
                 />
                 <div class="bangumi-item-info">
+                  <el-skeleton-item variant="text" class="bangumi-item-title" />
                   <el-skeleton-item variant="text" class="bangumi-item-title" />
                 </div>
               </div>
@@ -60,6 +62,7 @@
               :lg="3"
               v-for="video in videoList[item]"
               :key="video.Id"
+              style="padding-left: 5px;padding-right: 5px;"
             >
               <BangumiCardRow
                 @click="showDrawer(video)"
@@ -90,6 +93,7 @@
 import { bangumi } from "@/api/dandanPlay";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
+import "@/components/BangumiCardRow/index.css";
 export default {
   data() {
     return {
@@ -121,19 +125,7 @@ export default {
     BangumiCollapse,
     BangumiCardRow,
   },
-  computed: {
-    drawerSize() {
-      if (window.innerWidth < 768) {
-        return window.innerWidth * 0.9;
-      } else if (window.innerWidth < 992) {
-        return window.innerWidth * 0.6;
-      } else if (window.innerWidth < 1200) {
-        return window.innerWidth * 0.5;
-      } else {
-        return window.innerWidth * 0.45;
-      }
-    },
-  },
+  computed: {},
   methods: {
     getVideoList(e) {
       this.loading = true;
@@ -194,10 +186,11 @@ export default {
   flex-wrap: nowrap;
 }
 
-.nav-item-button:deep(.el-radio-button__inner) {
+/* .nav-item-button:deep(.el-radio-button__inner) {
   border-radius: 20px;
   margin-right: 10px;
-}
+  border: 1px solid var(--el-border-color);
+} */
 
 .search {
   margin-top: 10px;
@@ -223,64 +216,6 @@ export default {
   margin-top: 10px;
   margin-bottom: 10px;
   cursor: pointer;
-}
-.bangumi-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-radius: 10px;
-}
-.bangumi-item:hover {
-  /* 放大且加阴影 */
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(70, 70, 70, 0.3);
-}
-.bangumi-item-cover {
-  padding: 0px;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  border-radius: 5px;
-  position: relative;
-}
-.bangumi-item-img {
-  border-radius: 5px;
-  width: 100%;
-  height: 100%;
-}
-.bangumi-item-score {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  padding: 0.25rem;
-  border-radius: 10px 0 0 0;
-  display: flex;
-  align-items: center;
-  color: white;
-}
-.bangumi-item-watched {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  padding: 0.25rem;
-  border-radius: 10px 0 0 0;
-  display: flex;
-  align-items: center;
-  color: white;
-}
-
-.bangumi-item-info {
-  margin: 0.25rem;
-}
-.bangumi-item-title {
-  height: 50px;
-  font-size: 1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: normal;
 }
 .bangumi-drawer {
   width: auto;
