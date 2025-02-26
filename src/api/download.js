@@ -9,3 +9,19 @@ export function searchAllInfo(data) {
     data,
   });
 }
+
+export function getRSSLink(data) {
+  return request(BASE_URL,{
+    url: "/getRSSLink",
+    method: "post",
+    data,
+  });
+}
+
+export function getSubgroupInfo(data) {
+  return request(BASE_URL,{
+    url: "/getSubgroupInfo",
+    method: "post",
+    data,
+  });
+}
