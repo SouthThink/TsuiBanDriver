@@ -1,11 +1,11 @@
-import { fileURLToPath, URL } from 'node:url'
+import { fileURLToPath, URL } from "node:url";
 
-import { defineConfig } from 'vite'
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import { defineConfig } from "vite";
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
+import vue from "@vitejs/plugin-vue";
+import vueDevTools from "vite-plugin-vue-devtools";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -21,28 +21,28 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://100.123.128.116:8888',
+      "/api": {
+        target: "http://100.123.128.116:8888",
         // target: 'http://192.168.10.37:8888',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      '/web1': {
-        target: 'http://100.123.128.116:8888/web1',
+      "/web1": {
+        target: "http://100.123.128.116:8888/web1",
         // target: 'http://192.168.10.37:8888/web1',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/web1/, '')
+        rewrite: (path) => path.replace(/^\/web1/, ""),
       },
-      '/yzr': {
-        target: 'http://191.0.0.17:5000',
+      "/yzr": {
+        target: "http://191.0.0.17:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/yzr/, '')
+        rewrite: (path) => path.replace(/^\/yzr/, ""),
       },
-    }
+    },
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-})
+});

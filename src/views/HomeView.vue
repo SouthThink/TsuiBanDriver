@@ -7,20 +7,23 @@ x
     <el-tab-pane label="搜索" name="second" class="secondPage">
       <SearchPage />
     </el-tab-pane>
-    <el-tab-pane label="下载" name="third"></el-tab-pane>
-    <el-tab-pane label="设置" name="fourth"></el-tab-pane>
+    <el-tab-pane label="订阅" name="third">
+      <SubscribePage />
+    </el-tab-pane>
+    <el-tab-pane label="下载" name="fourth"></el-tab-pane>
+    <el-tab-pane label="设置" name="fifth"></el-tab-pane>
   </el-tabs>
 </template>
 <script setup>
 import { ref } from "vue";
 import HomePage from "@/components/MainPage/index.vue";
 import SearchPage from "@/components/SearchPage/index.vue";
-
+import SubscribePage from "@/components/SubscribePage/index.vue";
 const activeName = ref("first");
 </script>
 <style scoped>
 /* tabs撑满屏幕宽度 */
-.secondPage{
+.secondPage {
   display: flex;
   height: 100%;
   justify-content: center;

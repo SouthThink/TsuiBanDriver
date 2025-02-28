@@ -33,14 +33,18 @@
       </template>
     </el-skeleton>
     <el-drawer v-model="showBangumi" title="字幕组" direction="rtl" size="50%">
-      <el-table :data="subtitleGroupList" v-loading="subtitleGroupList.length === 0">
+      <el-table
+        :data="subtitleGroupList"
+        v-loading="subtitleGroupList.length === 0"
+        table-layout="auto"
+      >
         <el-table-column property="subgroupname" label="名称" />
         <!-- /下载按钮 -->
-        <el-table-column label="操作">
+        <el-table-column label="操作" width="85">
           <template #default="scope">
-            <el-button type="primary" @click="getRSSLinkBtn(scope.row)"
-              >下载</el-button
-            >
+            <el-button type="primary" @click="getRssLinkBtn(scope.row)">
+              订阅
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,7 +55,7 @@
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "element-plus/dist/index.css";
 import "@/components/BangumiCardRow/index.css";
-import { searchAllInfo, getRSSLink, getSubgroupInfo } from "@/api/download.js";
+import { searchAllInfo, addRssLink, getSubgroupInfo } from "@/api/download.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
 import { ref } from "vue";
@@ -116,13 +120,41 @@ const getSubgroupInfoBtn = (e) => {
     });
 };
 
-const getRSSLinkBtn = (e) => {
-  console.log(bangumiId.value,e.subgroupid);
+const getRssLinkBtn = (e) => {
+  console.log(e);
+  var data = {
+    bangumiId: bangumiId.value,
+    subgroupId: e.subgroupId.slice(1),
+  };
+  console.log(data);
+  ElNotification({
+    title: "订阅中",
+    message: "请稍等",
+    type: "info",
+  })
+  addRssLink(data).then((res) => {
+    console.log(res);
+    if (res.code == 200) {
+      ElNotification({
+        title: "订阅成功",
+        message: "请前往订阅列表查看",
+        type: "success",
+      });
+    } else {
+      ElNotification({
+        title: "订阅失败",
+        message: "请检查网络连接",
+        type: "warning",
+      });
+    }
+  });
 };
 </script>
 <style scoped>
 .searchPage {
   height: 100%;
+  width: 100%;
+  max-width: 600px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -135,7 +167,7 @@ const getRSSLinkBtn = (e) => {
   justify-content: center;
 }
 .input-with-select {
-  width: 600px;
+  width: 100%;
   margin-bottom: 100px;
 }
 
