@@ -26,34 +26,112 @@ export function getSubgroupInfo(data) {
   });
 }
 
+// export function getRssItems(params) {
+//   return request(BASE_URL,{
+//     url: "/getItems",
+//     method: "get",
+//     params,
+//   });
+// }
+
 export function getRssItems(params) {
   return request(BASE_URL,{
-    url: "/getItems",
+    url: "/everything",
     method: "get",
-    params,
+    params: {
+      url: "rss/items",
+      ...params,
+    },
   });
 }
+
+export function getDownloadList(params) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "get",
+    params: {
+      url: "sync/maindata",
+      ...params,
+    },
+  });
+}
+
+// export function removeItem(data) {
+//   return request(BASE_URL,{
+//     url: "/removeItem",
+//     method: "post",
+//     data,
+//   });
+// }
 
 export function removeItem(data) {
   return request(BASE_URL,{
-    url: "/removeItem",
+    url: "/everything",
     method: "post",
-    data,
+    data:{
+      data: data,
+      url:"rss/removeItem"
+    },
   });
 }
+
+// export function refreshItem(data) {
+//   return request(BASE_URL,{
+//     url: "/refreshItem",
+//     method: "post",
+//     data,
+//   });
+// }
 
 export function refreshItem(data) {
   return request(BASE_URL,{
-    url: "/refreshItem",
+    url: "/everything",
     method: "post",
-    data,
+    data:{
+      data: data,
+      url:"rss/refreshItem"
+    },
   });
 }
 
+// export function moveItem(data) {
+//   return request(BASE_URL,{
+//     url: "/moveItem",
+//     method: "post",
+//     data,
+//   });
+// }
+
 export function moveItem(data) {
   return request(BASE_URL,{
-    url: "/moveItem",
+    url: "/everything",
     method: "post",
-    data,
+    data:{
+      data: data,
+      url:"rss/moveItem"
+    },
   });
 }
+
+export function markAsRead(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"rss/markAsRead"
+    },
+  });
+}
+
+export function addFeed(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"rss/addFeed"
+    },
+  });
+}
+

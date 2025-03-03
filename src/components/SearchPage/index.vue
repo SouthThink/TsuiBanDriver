@@ -73,9 +73,10 @@ const searchAllInfoBtn = () => {
     name: input.value,
   })
     .then((res) => {
-      console.log(res);
       if (res.code == 200) {
-        resultList.value = res.data;
+        resultList.value = res.data.bangumiItem;
+        //将字符串解析为json
+        res.data.rss = JSON.parse(res.data.rss).rss;
         loading.value = false;
       } else if (res.code == 404) {
         loading.value = false;
@@ -92,6 +93,7 @@ const searchAllInfoBtn = () => {
           type: "warning",
         });
       }
+      console.log(res);
     })
     .catch((err) => {
       loading.value = false;
@@ -131,7 +133,7 @@ const getRssLinkBtn = (e) => {
     title: "订阅中",
     message: "请稍等",
     type: "info",
-  })
+  });
   addRssLink(data).then((res) => {
     console.log(res);
     if (res.code == 200) {

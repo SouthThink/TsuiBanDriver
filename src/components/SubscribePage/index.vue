@@ -1,17 +1,30 @@
 <template>
   <div class="subscribe-page">
     <el-button-group class="subscribe-button-group">
-      <el-button>新建订阅</el-button>
-      <!-- <el-button @click="getRssList">刷新列表</el-button> -->
+      <el-button @click="startRefreshRssList" v-if="timer == null">
+        刷新列表
+      </el-button>
+      <el-button @click="createRss">新建订阅</el-button>
       <!-- <el-button>标为已读</el-button> -->
       <el-button @click="updateAll">更新所有</el-button>
-      <el-button>下载器</el-button>
+      <el-button>RSS下载器</el-button>
     </el-button-group>
     <el-table :data="tableData" class="subscribe-table">
       <el-table-column type="expand" width="20">
         <template #default="props">
           <el-table :data="props.row.articles" table-layout="auto">
-            <el-table-column prop="title" />
+            <el-table-column>
+              <template #default="scope">
+                <el-checkbox v-model="scope.row.isRead" disabled />
+              </template>
+            </el-table-column>
+            <el-table-column prop="title">
+              <template #default="scope">
+                <el-text :type="scope.row.isRead ? '' : 'primary'">
+                  {{ scope.row.title }}
+                </el-text>
+              </template>
+            </el-table-column>
             <el-table-column prop="link">
               <template #default="scope">
                 <el-tooltip
@@ -24,7 +37,7 @@
                     type="primary"
                     :icon="Download"
                     circle
-                    @click="download(scope.row)"
+                    @click="download(scope.row, props.row)"
                   />
                 </el-tooltip>
               </template>
@@ -34,23 +47,34 @@
       </el-table-column>
       <el-table-column width="36">
         <template #default="scope">
-          <el-button
-            circle
-            :loading="scope.row.isLoading"
-            :type="
-              scope.row.isLoading
-                ? ''
-                : scope.row.hasError
-                ? 'danger'
-                : 'success'
-            "
-            size="small"
+          <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="全部已读"
+            placement="top-start"
           >
-            <div v-if="!scope.row.isLoading">
-              <el-icon v-if="scope.row.hasError"><Close /></el-icon>
-              <el-icon v-else><Check /></el-icon>
-            </div>
-          </el-button>
+            <el-button
+              circle
+              :loading="scope.row.isLoading"
+              :type="
+                scope.row.isLoading
+                  ? ''
+                  : scope.row.hasError
+                  ? 'danger'
+                  : 'success'
+              "
+              size="small"
+              @click="makeRead('', scope.row)"
+            >
+              <div v-if="!scope.row.isLoading">
+                <el-icon v-if="scope.row.hasError"><Close /></el-icon>
+                <el-text v-else-if="scope.row.unReadNum !== 0">
+                  {{ scope.row.unReadNum }}
+                </el-text>
+                <el-icon v-else><Check /></el-icon>
+              </div>
+            </el-button>
+          </el-tooltip>
         </template>
       </el-table-column>
       <el-table-column prop="title" label="订阅列表">
@@ -62,7 +86,7 @@
             v-else
             v-model="newName"
             autofocus
-            @keyup.enter="reName"
+            @keyup.enter="reName(scope.row)"
             @blur="notReName"
           />
         </template>
@@ -115,54 +139,73 @@
 </template>
 <script setup>
 import { RefreshRight, Edit, Delete, Download } from "@element-plus/icons-vue";
-import { getRssItems, removeItem, refreshItem, moveItem } from "@/api/download";
+import {
+  getRssItems,
+  removeItem,
+  refreshItem,
+  moveItem,
+  markAsRead,
+  addFeed,
+} from "@/api/download";
 import { ref, onMounted, onUnmounted } from "vue";
+import deepEqual from "@/utils/deepEqual";
 
 const tableData = ref([]);
 const tableTempData = ref([]);
 const rssName = ref("");
 const newName = ref("");
+const timer = ref(null);
 
 const getRssList = () => {
-  getRssItems().then((res) => {
-    if (res.code === 200) {
-      tableTempData.value = [];
-      Object.keys(res.data).forEach((item) => {
-        tableTempData.value.push({ ...res.data[item], title: item });
-      });
-      if (!deepEqual(tableTempData.value, tableData.value)) {
-        tableData.value = tableTempData.value;
+  getRssItems({withData: true})
+    .then((res) => {
+      if (res.code === 200) {
+        tableTempData.value = [];
+        Object.keys(res.data).forEach((item) => {
+          var unReadNum = res.data[item].articles.length;
+          res.data[item].articles.forEach((article) => {
+            if (
+              article.isRead !== undefined &&
+              article.isRead !== null &&
+              article.isRead
+            ) {
+              unReadNum--;
+            }
+          });
+          tableTempData.value.push({
+            ...res.data[item],
+            title: item,
+            unReadNum: unReadNum,
+          });
+        });
+        if (!deepEqual(tableTempData.value, tableData.value)) {
+          tableData.value = tableTempData.value;
+          console.log("tableData.value", tableData.value);
+        }
+      } else {
+        console.log("这是上面的");
+        ElNotification({
+          title: "连接失败",
+          message: "请检查网络连接",
+          type: "warning",
+        });
       }
-    } else {
+    })
+    .catch((err) => {
+      console.log("这是下面的");
       ElNotification({
-        title: "连接失败",
-        message: "请检查网络连接",
+        title: "订阅列表请求失败",
+        message: err,
         type: "warning",
       });
-    }
-  });
+      clearInterval(timer.value);
+      timer.value = null; // 清除定时器
+    });
 };
-//数组对象对比方法
-function deepEqual(a, b) {
-  if (a === b) return true;
-  if (
-    typeof a !== "object" ||
-    a === null ||
-    typeof b !== "object" ||
-    b === null
-  )
-    return false;
-  let keysA = Object.keys(a),
-    keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  for (let key of keysA) {
-    if (!keysB.includes(key) || !deepEqual(a[key], b[key])) return false;
-  }
-  return true;
-}
 
-const download = (url) => {
-  console.log(url);
+const download = (url, row) => {
+  console.log(url.torrentURL);
+  makeRead(url, row);
 };
 
 const deleteRss = (row) => {
@@ -172,36 +215,38 @@ const deleteRss = (row) => {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     type: "warning",
-  }).then(() => {
-    ElNotification({
-      title: "正在删除",
-      message: row.title,
-      type: "info",
-    })
-    removeItem({ path: row.title }).then((res) => {
-      if (res.code === 200) {
-        ElNotification({
-          title: "删除成功",
-          message: "删除成功",
-          type: "success",
-        });
-        getRssList();
-      } else {
-        ElNotification({
-          title: "删除失败",
-          message: "删除失败",
-          type: "error",
-        });
-      }
-    });
   })
-  .catch(() => {
-    console.log("取消删除");
-  });
+    .then(() => {
+      ElNotification({
+        title: "正在删除",
+        message: row.title,
+        type: "info",
+      });
+      removeItem({ path: row.title }).then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: "删除成功",
+            message: "删除成功",
+            type: "success",
+          });
+          getRssList();
+        } else {
+          ElNotification({
+            title: "删除失败",
+            message: "删除失败",
+            type: "error",
+          });
+        }
+      });
+    })
+    .catch(() => {
+      console.log("取消删除");
+    });
 };
 //刷新列表
 const refresh = (row) => {
   console.log(row.title);
+  row.isLoading = true;
   refreshItem({ itemPath: row.title }).then((res) => {
     if (res.code === 200) {
       ElNotification({
@@ -219,11 +264,15 @@ const refresh = (row) => {
   });
 };
 
+const startRefreshRssList = () => {
+  timer.value = setInterval(getRssList, 3000);
+};
+
 const updateAll = () => {
   tableData.value.forEach((item) => {
     refresh(item);
-    getRssList();
   });
+    getRssList();
 };
 
 const reRssNmae = (row) => {
@@ -231,9 +280,12 @@ const reRssNmae = (row) => {
   rssName.value = row.title;
 };
 
-const reName = () => {
-  console.log(rssName.value);
-  console.log(newName.value);
+const reName = (row) => {
+  // console.log(rssName.value);
+  // console.log(newName.value);
+  // console.log(row);
+  // console.log(row.isTrusted);
+  // console.log(row.title);
   ElNotification({
     title: "正在重命名",
     message: rssName.value,
@@ -246,6 +298,7 @@ const reName = () => {
         message: "重命名成功",
         type: "success",
       });
+      row.title = newName.value;
       getRssList();
       notReName();
     } else {
@@ -263,12 +316,53 @@ const notReName = () => {
   rssName.value = "";
 };
 
+const createRss = () => {
+  //弹出弹窗，中间是输入框，标题是请输入订阅链接
+  ElMessageBox.prompt("请输入订阅链接", "添加订阅", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    inputPattern: /^https?:\/\/.+/,
+    inputErrorMessage: "请输入正确的订阅链接",
+  })
+    .then(({ value }) => {
+      ElNotification({
+        title: "正在添加",
+        message: value,
+        type: "info",
+      });
+      addFeed({ url: value, path: "" }).then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: "添加成功",
+            message: "添加成功",
+            type: "success",
+          });
+          getRssList();
+        } else {
+          ElNotification({
+            title: "添加失败",
+            message: "添加失败",
+            type: "error",
+          });
+        }
+      });
+    })
+    .catch(() => {
+      console.log("取消添加");
+    });
+};
+
+const makeRead = (row, props) => {
+  // row.isRead = true;
+  markAsRead({ itemPath: props.title, articleId: row.title });
+};
+
 // 当页面挂载到DOM上时，每三秒调用一次getRssList方法获取订阅列表，页面从DOM上卸载后销毁计时器
 onMounted(() => {
   getRssList();
-  const timer = setInterval(getRssList, 3000);
+  timer.value = setInterval(getRssList, 3000);
   onUnmounted(() => {
-    clearInterval(timer);
+    clearInterval(timer.value);
   });
 });
 </script>
