@@ -50,7 +50,7 @@ export default {
             escape: true,
             style: {
               // color: "#03A9F4",
-              "font-size": "14px",
+              "font-size": "18px",
             },
           },
           //设置
