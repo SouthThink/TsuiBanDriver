@@ -1,17 +1,17 @@
 x
 <template>
-  <el-tabs v-model="activeName" class="tabs" @tab-click="" type="border-card">
+  <el-tabs v-model="activeName" class="tabs" @tab-click="changeTab" type="border-card">
     <el-tab-pane label="番剧" name="first">
-      <HomePage />
+      <HomePage v-if="activeName==='first'"/>
     </el-tab-pane>
     <el-tab-pane label="搜索" name="second" class="secondPage">
-      <SearchPage />
+      <SearchPage v-if="activeName==='second'"/>
     </el-tab-pane>
     <el-tab-pane label="订阅" name="third">
-      <SubscribePage />
+      <SubscribePage v-if="activeName==='third'"/>
     </el-tab-pane>
     <el-tab-pane label="下载" name="fourth">
-      <DownloadPage />
+      <DownloadPage v-if="activeName==='fourth'"/>
     </el-tab-pane>
     <el-tab-pane label="设置" name="fifth"></el-tab-pane>
   </el-tabs>
@@ -23,12 +23,15 @@ import SearchPage from "@/components/SearchPage/index.vue";
 import DownloadPage from "@/components/DownloadPage/index.vue";
 import SubscribePage from "@/components/SubscribePage/index.vue";
 const activeName = ref("first");
+
+
+
 </script>
 <style scoped>
 /* tabs撑满屏幕宽度 */
 .secondPage {
   display: flex;
-  height: 100%;
+  /* height: 100%; */
   justify-content: center;
 }
 .tabs {

@@ -11,7 +11,7 @@
       />
     </div>
     <div class="bangumiList">
-      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle"/>
+      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle" />
     </div>
   </div>
 </template>
@@ -19,7 +19,7 @@
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import { makeHistory } from "@/api/dandanPlay.js";
-import {subtitle} from "@/api/dandanPlay.js";
+import { subtitle } from "@/api/dandanPlay.js";
 export default {
   data() {
     return {
@@ -40,6 +40,15 @@ export default {
         this.videoId = route.query.videoId;
         this.AnimeId = route.query.AnimeId;
         console.log("watch", this.videoId, this.AnimeId);
+
+        makeHistory({ id: this.videoId }).then(
+          (res) => {
+            console.log(res);
+          },
+          (err) => {
+            console.log(err);
+          }
+        );
       },
       immediate: true,
     },
@@ -54,14 +63,6 @@ export default {
   mounted() {
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
-    makeHistory({id: this.videoId}).then(
-      (res) => {
-        console.log(res);
-      },
-      (err) => {
-        console.log(err);
-      }
-    )
     // subtitle(this.videoId).then(
     //   (res) => {
     //     console.log(res);
@@ -79,13 +80,13 @@ export default {
       this.title = title;
       //设置页面标题
       document.title = title;
-    }
+    },
   },
 };
 </script>
 
 <style scoped>
-.video{
+.video {
   margin: auto;
 }
 .videoInfo {
@@ -96,7 +97,7 @@ export default {
   line-height: 100px;
   border-bottom: 1px solid #ccc;
 }
-.title{
+.title {
   font-size: 24px;
   font-weight: bold;
 }

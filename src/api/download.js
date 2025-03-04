@@ -135,3 +135,25 @@ export function addFeed(data) {
   });
 }
 
+export function addTorrents(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"torrents/add"
+    },
+  });
+}
+
+export function deleteTorrents(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"torrents/delete"
+    },
+  });
+}
+

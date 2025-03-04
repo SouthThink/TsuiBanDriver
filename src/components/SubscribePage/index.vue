@@ -9,7 +9,7 @@
       <el-button @click="updateAll">更新所有</el-button>
       <el-button>RSS下载器</el-button>
     </el-button-group>
-    <el-table :data="tableData" class="subscribe-table">
+    <el-table :data="tableData" class="subscribe-table" v-loading="tableData.length == 0">
       <el-table-column type="expand" width="20">
         <template #default="props">
           <el-table :data="props.row.articles" table-layout="auto">
@@ -148,7 +148,7 @@ import {
   addFeed,
 } from "@/api/download";
 import { ref, onMounted, onUnmounted } from "vue";
-import deepEqual from "@/utils/deepEqual";
+import { createDownload, deepEqual } from "@/utils/utils.js";
 
 const tableData = ref([]);
 const tableTempData = ref([]);
@@ -157,7 +157,7 @@ const newName = ref("");
 const timer = ref(null);
 
 const getRssList = () => {
-  getRssItems({withData: true})
+  getRssItems({ withData: true })
     .then((res) => {
       if (res.code === 200) {
         tableTempData.value = [];
@@ -183,18 +183,18 @@ const getRssList = () => {
           console.log("tableData.value", tableData.value);
         }
       } else {
-        console.log("这是上面的");
         ElNotification({
-          title: "连接失败",
+          title: "订阅列表请求失败",
           message: "请检查网络连接",
           type: "warning",
         });
+        clearInterval(timer.value);
+        timer.value = null; // 清除定时器
       }
     })
     .catch((err) => {
-      console.log("这是下面的");
       ElNotification({
-        title: "订阅列表请求失败",
+        title: "订阅列表请求错误",
         message: err,
         type: "warning",
       });
@@ -204,8 +204,9 @@ const getRssList = () => {
 };
 
 const download = (url, row) => {
-  console.log(url.torrentURL);
+  console.log(url);
   makeRead(url, row);
+  createDownload(url.torrentURL, url.title);
 };
 
 const deleteRss = (row) => {
@@ -272,7 +273,7 @@ const updateAll = () => {
   tableData.value.forEach((item) => {
     refresh(item);
   });
-    getRssList();
+  getRssList();
 };
 
 const reRssNmae = (row) => {
