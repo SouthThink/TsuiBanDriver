@@ -1,6 +1,6 @@
 x
 <template>
-  <el-tabs v-model="activeName" class="tabs" @tab-click="changeTab" type="border-card">
+  <el-tabs v-model="activeName" class="tabs" type="border-card">
     <el-tab-pane label="番剧" name="first">
       <HomePage v-if="activeName==='first'"/>
     </el-tab-pane>

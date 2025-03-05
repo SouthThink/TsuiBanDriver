@@ -1,7 +1,12 @@
 <template>
   <div class="download-page">
     <div class="download-table">
-      <el-table :data="torrents" style="width: 100%" v-loading="torrents.length === 0">
+      <el-table
+        :data="torrents"
+        style="width: 100%"
+        v-loading="torrents.length === 0 && loading"
+        empty-text="暂无下载任务"
+      >
         <el-table-column fixed prop="name" label="文件名" width="300">
           <template #default="scope">
             <el-popover placement="bottom" trigger="click">
@@ -60,7 +65,7 @@
             {{ fileSize(scope.row.downloaded) }}
           </template>
         </el-table-column>
-        <el-table-column prop="dlspeed" label="速度"  width="80">
+        <el-table-column prop="dlspeed" label="速度" width="80">
           <template #default="scope">
             {{ formatSpeed(scope.row.dlspeed) }}
           </template>
@@ -101,24 +106,42 @@ import {
 const torrents = ref([]);
 const timer = ref(null);
 const rid = ref(0);
+const rid2 = ref(null);
+const loading = ref(false);
 var resData = {};
 
-const getDownloadListBtn = async () => {
-  const res = await getDownloadList({ rid: rid.value });
-  if (rid.value === 0) {
-    resData = res.data;
-  } else {
-    resData = mergeObjects(resData, res.data);
-  }
-  // console.log(resData);
-  rid.value = resData.rid;
-  torrents.value = [];
-  let torrent = resData.torrents;
-  // console.log(torrent);
-  Object.keys(torrent).forEach((key) => {
-    torrents.value.push(torrent[key]);
-  });
-  // console.log(torrents.value);
+const getDownloadListBtn = () => {
+  loading.value = true;
+  if(rid.value === rid2.value) return;
+  rid2.value = rid.value
+  getDownloadList({ rid: rid.value })
+    .then((res) => {
+      loading.value = false;
+      if (rid.value === 0) {
+        resData = res.data;
+      } else {
+        resData = mergeObjects(resData, res.data);
+      }
+      // console.log(resData);
+      rid.value = resData.rid;
+      torrents.value = [];
+      let torrent = resData.torrents;
+      // console.log(torrent);
+      Object.keys(torrent).forEach((key) => {
+        torrents.value.push(torrent[key]);
+      });
+      // console.log(torrents.value);
+    })
+    .catch((err) => {
+      loading.value = false;
+      ElNotification({
+        title: "下载列表请求错误",
+        message: err,
+        type: "error",
+      });
+      clearInterval(timer.value);
+      timer.value = null; // 清除定时器
+    });
 };
 
 const removeTorrent = async (id) => {

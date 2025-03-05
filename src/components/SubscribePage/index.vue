@@ -7,9 +7,9 @@
       <el-button @click="createRss">新建订阅</el-button>
       <!-- <el-button>标为已读</el-button> -->
       <el-button @click="updateAll">更新所有</el-button>
-      <el-button>RSS下载器</el-button>
+      <el-button @click="openDownloadMsgBox">RSS下载器</el-button>
     </el-button-group>
-    <el-table :data="tableData" class="subscribe-table" v-loading="tableData.length == 0">
+    <el-table :data="tableData" class="subscribe-table" v-loading="tableData.length === 0 && loading" empty-text="暂无订阅">
       <el-table-column type="expand" width="20">
         <template #default="props">
           <el-table :data="props.row.articles" table-layout="auto">
@@ -135,6 +135,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <DownloadMsgBox @close="closeDownloadMsgBox" :download-visible="downloadVisible" />
   </div>
 </template>
 <script setup>
@@ -149,16 +150,21 @@ import {
 } from "@/api/download";
 import { ref, onMounted, onUnmounted } from "vue";
 import { createDownload, deepEqual } from "@/utils/utils.js";
+import DownloadMsgBox from "@/components/DownloadMsgBox/index.vue";
 
 const tableData = ref([]);
 const tableTempData = ref([]);
 const rssName = ref("");
 const newName = ref("");
 const timer = ref(null);
+const loading = ref(false);
+const downloadVisible = ref(false);
 
 const getRssList = () => {
+  loading.value = true;
   getRssItems({ withData: true })
     .then((res) => {
+      loading.value = false;
       if (res.code === 200) {
         tableTempData.value = [];
         Object.keys(res.data).forEach((item) => {
@@ -180,7 +186,6 @@ const getRssList = () => {
         });
         if (!deepEqual(tableTempData.value, tableData.value)) {
           tableData.value = tableTempData.value;
-          console.log("tableData.value", tableData.value);
         }
       } else {
         ElNotification({
@@ -193,10 +198,11 @@ const getRssList = () => {
       }
     })
     .catch((err) => {
+      loading.value = false;
       ElNotification({
         title: "订阅列表请求错误",
         message: err,
-        type: "warning",
+        type: "error",
       });
       clearInterval(timer.value);
       timer.value = null; // 清除定时器
@@ -358,9 +364,19 @@ const makeRead = (row, props) => {
   markAsRead({ itemPath: props.title, articleId: row.title });
 };
 
+const openDownloadMsgBox = () => {
+  downloadVisible.value = false;
+  downloadVisible.value = true;
+}
+
+const closeDownloadMsgBox = () => {
+  downloadVisible.value = false;
+}
+
 // 当页面挂载到DOM上时，每三秒调用一次getRssList方法获取订阅列表，页面从DOM上卸载后销毁计时器
 onMounted(() => {
   getRssList();
+  downloadVisible.value = false;
   timer.value = setInterval(getRssList, 3000);
   onUnmounted(() => {
     clearInterval(timer.value);

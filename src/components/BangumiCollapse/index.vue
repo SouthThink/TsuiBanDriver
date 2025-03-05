@@ -10,7 +10,7 @@
         v-for="(item, index) in bangumiList"
         :key="index"
         :name="index"
-        :title="item.EpisodeTitle"
+        :title="item.EpisodeTitle + ' ' + formatReadTime(item.AirDate)"
         class="bangumi-collapse-item"
         disabled
       >
@@ -65,6 +65,16 @@ export default {
     },
   },
   methods: {
+    //时间格式转换成阅读格式
+    formatReadTime(inputDate) {
+      const date = new Date(inputDate);
+
+      const year = date.getFullYear().toString().slice(-2); // 获取年份的后两位
+      const month = (date.getMonth() + 1).toString(); // 获取月份，注意月份是从0开始的，所以需要+1
+      const day = date.getDate().toString(); // 获取日期
+
+      return `${year}/${month}/${day}`;
+    },
     handleChange(e) {
       //   console.log(e);
     },
@@ -86,16 +96,24 @@ export default {
       this.bangumiList = [];
       this.activeNames = [];
       this.bangumiTitle = e.Title;
-      bangumiList(e).then((res) => {
-        // console.log("返回的集数", res);
-        this.bangumiList = res.Episodes;
-        // console.log(this.bangumiList);
-        this.bangumiList.forEach((element, index) => {
-          if (element.LocalMatchedFiles.length !== 0) {
-            this.activeNames.push(index);
-          }
+      bangumiList(e)
+        .then((res) => {
+          console.log("返回的集数", res);
+          this.bangumiList = res.Episodes;
+          // console.log(this.bangumiList);
+          this.bangumiList.forEach((element, index) => {
+            if (element.LocalMatchedFiles.length !== 0) {
+              this.activeNames.push(index);
+            }
+          });
+        })
+        .catch((err) => {
+          ElNotification({
+            title: "获取番剧集数失败",
+            message: err,
+            type: "error",
+          });
         });
-      });
     },
     isSelected(e) {
       if (e.Id == this.Id) {

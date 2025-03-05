@@ -138,7 +138,11 @@ export default {
           this.loading = false;
         })
         .catch((err) => {
-          console.log(err);
+          ElNotification({
+            title: "获取番剧列表失败",
+            message: err,
+            type: "error",
+          });
           this.loading = false;
         });
     },

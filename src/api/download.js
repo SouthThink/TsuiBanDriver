@@ -157,3 +157,46 @@ export function deleteTorrents(data) {
   });
 }
 
+export function getRssRules(params) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "get",
+    params:{
+      ...params,
+      url:"rss/rules"
+    },
+  });
+}
+
+export function setRule(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"rss/setRule"
+    },
+  });
+}
+
+export function matchingArticles(params) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "get",
+    params:{
+      ...params,
+      url:"rss/matchingArticles"
+    },
+  });
+}
+
+export function removeRule(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"rss/removeRule"
+    },
+  });
+}

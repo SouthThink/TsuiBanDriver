@@ -15,10 +15,10 @@
         <div class="result" v-if="resultList.length > 0 || rssItem.item.length > 0">
           <el-row :gutter="24" class="bangumi-card-row" :loading="true">
             <el-col
-              :xs="resultList.length === 4 ? 8 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :sm="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :md="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :lg="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
+              :xs="resultList.length === 4 ? 8 : resultList.length === 3 ? 8 : 12"
+              :sm="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
+              :md="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
+              :lg="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
               v-for="video in resultList"
               :key="video.Id"
             >
@@ -31,7 +31,7 @@
           </el-row>
 
           <div class="table">
-            <el-table :data="currentPageData">
+            <el-table :data="currentPageData" empty-text="暂无数据">
               <el-table-column property="title" label="标题" />
               <el-table-column label="操作" width="85">
                 <template #header>
@@ -175,7 +175,7 @@ const searchAllInfoBtn = () => {
         ElNotification({
           title: "搜索失败",
           message: "请检查网络连接",
-          type: "warning",
+          type: "error",
         });
       }
       console.log(res);
@@ -185,7 +185,7 @@ const searchAllInfoBtn = () => {
       ElNotification({
         title: "搜索失败",
         message: err,
-        type: "warning",
+        type: "error",
       });
     });
 };
@@ -203,7 +203,11 @@ const getSubgroupInfoBtn = (e) => {
       subtitleGroupList.value = res.data;
     })
     .catch((err) => {
-      console.log(err);
+      ElNotification({
+        title: "获取字幕组失败",
+        message: err,
+        type: "error",
+      })
     });
 };
 
