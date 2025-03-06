@@ -97,15 +97,16 @@
               <template #header>
                 <el-text>操作</el-text>
               </template>
-              <div class="btns">
-                <el-affix target=".main" :offset="150" position="bottom" class="affix_btn">
-                  <el-button type="primary" @click="saveRuleBtn" class="btn">保存</el-button>
-                </el-affix>
-                <el-affix target=".main" :offset="150" position="bottom" class="affix_btn">
-                  <el-button type="danger" @click="removeRuleBtn" class="btn">删除</el-button>
-                </el-affix>
-              </div>
+              <div style="height: 22px;"></div>
             </el-card>
+            <div class="btns">
+              <el-button type="primary" @click="saveRuleBtn" class="btn"
+                >保存</el-button
+              >
+              <el-button type="danger" @click="removeRuleBtn" class="btn"
+                >删除</el-button
+              >
+            </div>
           </el-scrollbar>
         </el-main>
         <el-aside v-if="selectRssList.length > 0" class="aside" width="40%">
@@ -445,6 +446,7 @@ const select = (key) => {
 .main {
   padding-top: 0;
   height: 600px;
+  position: relative;
 }
 
 .aside {
@@ -464,15 +466,12 @@ const select = (key) => {
   width: 100%;
   display: flex;
   justify-content: space-around;
+  position: absolute;
+  bottom: 25px;
+  z-index: 999;
+  padding: 0 20px;
 }
-
-.affix_btn{
-  width: 50%;
-  margin: 0 10px;
-}
-
 .btn {
   width: 100%;
-
 }
 </style>

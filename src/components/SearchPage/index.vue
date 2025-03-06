@@ -12,13 +12,16 @@
     <el-skeleton :loading="loading" animated :count="3">
       <template #template> </template>
       <template #default>
-        <div class="result" v-if="resultList.length > 0 || rssItem.item.length > 0">
+        <div
+          class="result"
+          v-if="resultList.length > 0 || rssItem.item.length > 0"
+        >
           <el-row :gutter="24" class="bangumi-card-row" :loading="true">
             <el-col
-              :xs="resultList.length === 4 ? 8 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :sm="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :md="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
-              :lg="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
+              :xs="colNum+2"
+              :sm="colNum"
+              :md="colNum"
+              :lg="colNum"
               v-for="video in resultList"
               :key="video.Id"
             >
@@ -48,7 +51,12 @@
                     type="primary"
                     :icon="Download"
                     circle
-                    @click="createDownload(scope.row.enclosure['@url'], scope.row.description)"
+                    @click="
+                      createDownload(
+                        scope.row.enclosure['@url'],
+                        scope.row.description
+                      )
+                    "
                   />
                 </template>
               </el-table-column>
@@ -69,8 +77,9 @@
     <el-drawer v-model="showBangumi" title="字幕组" direction="rtl" size="50%">
       <el-table
         :data="subtitleGroupList"
-        v-loading="subtitleGroupList.length === 0"
+        v-loading="subtitleGroupListLoading"
         table-layout="auto"
+        empty-text="未找到字幕组"
       >
         <el-table-column property="subgroupname" label="名称" />
         <!-- /下载按钮 -->
@@ -90,7 +99,13 @@ import { Download } from "@element-plus/icons-vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "element-plus/dist/index.css";
 import "@/components/BangumiCardRow/index.css";
-import { searchAllInfo, addRssLink, getSubgroupInfo, addFeed, addTorrents } from "@/api/download.js";
+import {
+  searchAllInfo,
+  addRssLink,
+  getSubgroupInfo,
+  addFeed,
+  addTorrents,
+} from "@/api/download.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
 import { ref, computed } from "vue";
@@ -98,10 +113,11 @@ import { createDownload } from "@/utils/utils.js";
 
 const input = ref("");
 const resultList = ref([]);
-const rssItem = ref({item:[]});
+const rssItem = ref({ item: [] });
 const loading = ref(false);
 const subtitleGroupList = ref([]);
 const showBangumi = ref(false);
+const subtitleGroupListLoading = ref(false);
 const bangumiId = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -110,6 +126,11 @@ const currentPageData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   const end = currentPage.value * pageSize.value;
   return rssItem.value.item.slice(start, end);
+});
+
+const colNum = computed(() => {
+  const lengthToValueMap = { 4: 6, 3: 8, 2: 12, 1: 24 };
+  return lengthToValueMap[resultList.value.length];
 });
 
 const handleSizeChange = (newSize) => {
@@ -162,7 +183,7 @@ const searchAllInfoBtn = () => {
         resultList.value = res.data.bangumiItem;
         //将字符串解析为json
         rssItem.value = JSON.parse(res.data.rss).rss.channel;
-        if(!Array.isArray(rssItem.value.item)){
+        if (!Array.isArray(rssItem.value.item)) {
           rssItem.value.item = [rssItem.value.item];
         }
         // console.log(rssItem.value.item);
@@ -196,21 +217,32 @@ const searchAllInfoBtn = () => {
 const getSubgroupInfoBtn = (e) => {
   subtitleGroupList.value = [];
   showBangumi.value = true;
+  subtitleGroupListLoading.value = true;
   bangumiId.value = e.bangumiId;
   console.log(e);
   getSubgroupInfo({
     bangumiId: bangumiId.value,
   })
     .then((res) => {
-      console.log(res);
-      subtitleGroupList.value = res.data;
+      if (res.code === 200) {
+        console.log(res);
+        subtitleGroupList.value = res.data;
+      } else {
+        subtitleGroupListLoading.value = false;
+        ElNotification({
+          title: "获取字幕组失败",
+          message: "请检查网络连接",
+          type: "error",
+        });
+      }
     })
     .catch((err) => {
+      subtitleGroupListLoading.value = false;
       ElNotification({
         title: "获取字幕组失败",
         message: err,
         type: "error",
-      })
+      });
     });
 };
 
