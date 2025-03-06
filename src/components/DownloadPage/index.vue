@@ -13,8 +13,37 @@
               <template #reference>
                 <el-text>{{ scope.row.name }}</el-text>
               </template>
-              <!-- 模拟右键菜单 -->
-              <div class="right-click-menu">
+              <el-menu class="right-click-menu">
+                <el-menu-item index="1">
+                  <template #title>
+                    <!-- <el-icon><Delete /></el-icon>
+                    <el-text type="danger">删除种子</el-text> -->
+                    <el-button
+                      type="danger"
+                      link
+                      :icon="Delete"
+                      @click="removeTorrent(scope.row)"
+                    >
+                      删除种子
+                    </el-button>
+                  </template>
+                </el-menu-item>
+                <el-menu-item index="2">
+                  <template #title>
+                    <!-- <el-icon><Edit /></el-icon>
+                    <el-text type="primary">移动位置</el-text> -->
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="Edit"
+                      @click="setLocationBtn(scope.row)"
+                    >
+                      移动位置
+                    </el-button>
+                  </template>
+                </el-menu-item>
+              </el-menu>
+              <!-- <div class="right-click-menu">
                 <el-button
                   type="danger"
                   link
@@ -23,7 +52,15 @@
                 >
                   删除种子
                 </el-button>
-              </div>
+                <el-button
+                  type="primary"
+                  link
+                  :icon="Edit"
+                  @click="setLocationBtn(scope.row)"
+                >
+                  移动位置
+                </el-button>
+              </div> -->
             </el-popover>
           </template>
         </el-table-column>
@@ -91,9 +128,9 @@
   </div>
 </template>
 <script setup>
-import { getDownloadList, deleteTorrents } from "@/api/download";
+import { getDownloadList, deleteTorrents, setLocation } from "@/api/download";
 import { ref, onMounted, onUnmounted } from "vue";
-import { Delete } from "@element-plus/icons-vue";
+import { Delete, Edit } from "@element-plus/icons-vue";
 import {
   fileSize,
   formatDate,
@@ -112,8 +149,8 @@ var resData = {};
 
 const getDownloadListBtn = () => {
   loading.value = true;
-  if(rid.value === rid2.value) return;
-  rid2.value = rid.value
+  if (rid.value === rid2.value) return;
+  rid2.value = rid.value;
   getDownloadList({ rid: rid.value })
     .then((res) => {
       loading.value = false;
@@ -183,6 +220,51 @@ const removeTorrent = async (id) => {
   // }
 };
 
+const setLocationBtn = (row) => {
+  console.log(row.save_path);
+  console.log(row.infohash_v1);
+  console.log(row);
+  ElMessageBox.prompt(`当前:${row.save_path}`, "移动位置", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    inputPattern: /\S/,
+    inputErrorMessage: "地址路径不能为空",
+  })
+    .then(({ value }) => {
+      ElNotification({
+        title: "正在修改",
+        message: value,
+        type: "info",
+      });
+      setLocation({ location: value, hashes: row.infohash_v1 })
+        .then((res) => {
+          if (res.code === 200) {
+            ElNotification({
+              title: "成功",
+              message: "修改成功",
+              type: "success",
+            });
+          } else {
+            ElNotification({
+              title: "移动失败",
+              message: res.msg,
+              type: "error",
+            });
+          }
+        })
+        .catch((err) => {
+          ElNotification({
+            title: "移动失败",
+            message: err,
+            type: "error",
+          });
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
 onMounted(() => {
   getDownloadListBtn();
   timer.value = setInterval(getDownloadListBtn, 3000);
@@ -200,8 +282,11 @@ onMounted(() => {
   padding: 0;
 }
 .right-click-menu {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
+  border: 0;
+}
+
+.right-click-menu:deep(.el-menu-item) {
+  padding: 0;
+  height: 30px;
 }
 </style>

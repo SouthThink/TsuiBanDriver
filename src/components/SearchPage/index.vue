@@ -15,10 +15,10 @@
         <div class="result" v-if="resultList.length > 0 || rssItem.item.length > 0">
           <el-row :gutter="24" class="bangumi-card-row" :loading="true">
             <el-col
-              :xs="resultList.length === 4 ? 8 : resultList.length === 3 ? 8 : 12"
-              :sm="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
-              :md="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
-              :lg="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : 12"
+              :xs="resultList.length === 4 ? 8 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
+              :sm="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
+              :md="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
+              :lg="resultList.length === 4 ? 6 : resultList.length === 3 ? 8 : resultList.length === 2 ? 12 : 24"
               v-for="video in resultList"
               :key="video.Id"
             >
@@ -31,7 +31,7 @@
           </el-row>
 
           <div class="table">
-            <el-table :data="currentPageData" empty-text="暂无数据">
+            <el-table :data="currentPageData">
               <el-table-column property="title" label="标题" />
               <el-table-column label="操作" width="85">
                 <template #header>
@@ -162,6 +162,10 @@ const searchAllInfoBtn = () => {
         resultList.value = res.data.bangumiItem;
         //将字符串解析为json
         rssItem.value = JSON.parse(res.data.rss).rss.channel;
+        if(!Array.isArray(rssItem.value.item)){
+          rssItem.value.item = [rssItem.value.item];
+        }
+        // console.log(rssItem.value.item);
         loading.value = false;
       } else if (res.code == 404) {
         loading.value = false;
@@ -178,7 +182,6 @@ const searchAllInfoBtn = () => {
           type: "error",
         });
       }
-      console.log(res);
     })
     .catch((err) => {
       loading.value = false;

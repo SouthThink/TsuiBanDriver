@@ -97,8 +97,14 @@
               <template #header>
                 <el-text>操作</el-text>
               </template>
-              <el-button type="primary" @click="saveRuleBtn">保存</el-button>
-              <el-button type="danger" @click="removeRuleBtn">删除</el-button>
+              <div class="btns">
+                <el-affix target=".main" :offset="150" position="bottom" class="affix_btn">
+                  <el-button type="primary" @click="saveRuleBtn" class="btn">保存</el-button>
+                </el-affix>
+                <el-affix target=".main" :offset="150" position="bottom" class="affix_btn">
+                  <el-button type="danger" @click="removeRuleBtn" class="btn">删除</el-button>
+                </el-affix>
+              </div>
             </el-card>
           </el-scrollbar>
         </el-main>
@@ -243,11 +249,10 @@ const getSubscribeList = () => {
 const handleSelectionChange = (val) => {
   if (val.length > 0) {
     selectRssList.value = val;
-    ruleData.affectedFeeds = val.map((item) => item.url);
-    console.log(ruleData.affectedFeeds);
+    ruleData.value.affectedFeeds = val.map((item) => item.url);
+    console.log(ruleData.value.affectedFeeds, "选中订阅链接");
     console.log(selectRuleName.value, "选中规则名称");
     console.log(selectRssList.value, "选中订阅列表");
-    getMatchingArticles();
   }
 };
 
@@ -257,19 +262,18 @@ const handleMenuSelect = (index) => {
     selectRssList.value = [];
     selectRuleName.value = index;
     tableRef.value.clearSelection();
-    // console.log(index);
     ruleData.value = ruleInfo.value[index];
-    // console.log(ruleData.value);
-    // console.log(ruleData.value.affectedFeeds);
-    ruleData.value.affectedFeeds.forEach((item) => {
-      //判断item字符串是否否存在于SubscribeList中的url字段中
-      const index1 = SubscribeList.value.findIndex((obj) => obj.url === item);
-      // console.log(index1);
-      if (index1 !== -1) {
-        tableRef.value.toggleRowSelection(SubscribeList.value[index1], true);
-        // console.log(SubscribeList.value[index1]);
-      }
-    });
+    if (ruleData.value.affectedFeeds.length > 0) {
+      ruleData.value.affectedFeeds.forEach((item) => {
+        //判断item字符串是否否存在于SubscribeList中的url字段中
+        const index1 = SubscribeList.value.findIndex((obj) => obj.url === item);
+        if (index1 !== -1) {
+          tableRef.value.toggleRowSelection(SubscribeList.value[index1], true);
+          // console.log(SubscribeList.value[index1]);
+        }
+      });
+      getMatchingArticles();
+    }
   } else {
     // 弹出输入框询问规则名称
     ElMessageBox.prompt("请输入规则名称", "新建规则", {
@@ -309,7 +313,6 @@ const handleMenuSelect = (index) => {
               message: "请前往规则管理页面查看",
               type: "success",
             });
-            resetAll();
             getRules();
           } else {
             ElNotification({
@@ -378,7 +381,6 @@ const removeRuleBtn = () => {
           message: "请前往规则管理页面查看",
           type: "success",
         });
-        resetAll();
         getRules();
       } else {
         ElNotification({
@@ -397,6 +399,7 @@ const saveRuleBtn = () => {
     message: "请稍后",
     type: "info",
   });
+  ruleData.value.torrentParams.save_path = ruleData.value.savePath;
   setRule({
     ruleName: selectRuleName.value,
     ruleDef: ruleData.value,
@@ -427,7 +430,7 @@ const saveRuleBtn = () => {
 };
 
 const select = (key) => {
-  console.log(key);
+  console.log(key, "主动选择");
 };
 </script>
 <style scoped>
@@ -457,6 +460,19 @@ const select = (key) => {
   padding: 2px 10px;
 }
 
-.matchingArticlesList {
+.btns {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.affix_btn{
+  width: 50%;
+  margin: 0 10px;
+}
+
+.btn {
+  width: 100%;
+
 }
 </style>

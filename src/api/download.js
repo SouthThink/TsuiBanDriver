@@ -168,14 +168,22 @@ export function getRssRules(params) {
   });
 }
 
+// export function setRule(data) {
+//   return request(BASE_URL,{
+//     url: "/everything",
+//     method: "post",
+//     data:{
+//       data: data,
+//       url:"rss/setRule"
+//     },
+//   });
+// }
+
 export function setRule(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/setRule",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/setRule"
-    },
+    data:data,
   });
 }
 
@@ -197,6 +205,17 @@ export function removeRule(data) {
     data:{
       data: data,
       url:"rss/removeRule"
+    },
+  });
+}
+
+export function setLocation(data) {
+  return request(BASE_URL,{
+    url: "/everything",
+    method: "post",
+    data:{
+      data: data,
+      url:"torrents/setLocation"
     },
   });
 }
