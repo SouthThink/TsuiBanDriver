@@ -18,7 +18,7 @@
         >
           <el-row :gutter="24" class="bangumi-card-row" :loading="true">
             <el-col
-              :xs="colNum+2"
+              :xs="colNum + 2"
               :sm="colNum"
               :md="colNum"
               :lg="colNum"
@@ -224,11 +224,11 @@ const getSubgroupInfoBtn = (e) => {
     bangumiId: bangumiId.value,
   })
     .then((res) => {
+      subtitleGroupListLoading.value = false;
       if (res.code === 200) {
         console.log(res);
         subtitleGroupList.value = res.data;
       } else {
-        subtitleGroupListLoading.value = false;
         ElNotification({
           title: "获取字幕组失败",
           message: "请检查网络连接",
