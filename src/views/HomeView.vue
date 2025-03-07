@@ -13,13 +13,16 @@ x
     <el-tab-pane label="下载" name="fourth">
       <DownloadPage v-if="activeName==='fourth'"/>
     </el-tab-pane>
-    <el-tab-pane label="设置" name="fifth"></el-tab-pane>
+    <el-tab-pane label="设置" name="fifth">
+      <SettingPage v-if="activeName==='fifth'"/>
+    </el-tab-pane>
   </el-tabs>
 </template>
 <script setup>
 import { ref } from "vue";
 import HomePage from "@/components/MainPage/index.vue";
 import SearchPage from "@/components/SearchPage/index.vue";
+import SettingPage from "@/components/SettingPage/index.vue";
 import DownloadPage from "@/components/DownloadPage/index.vue";
 import SubscribePage from "@/components/SubscribePage/index.vue";
 const activeName = ref("first");

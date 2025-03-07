@@ -286,7 +286,8 @@ onMounted(() => {
 }
 
 .right-click-menu:deep(.el-menu-item) {
-  padding: 0;
+  
+  padding: 0 !important;
   height: 30px;
 }
 </style>

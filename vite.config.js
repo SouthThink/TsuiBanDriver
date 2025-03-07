@@ -34,7 +34,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/web1/, ""),
       },
       "/yzr": {
-        target: "http://191.0.0.17:5000",
+        // target: "http://191.0.0.17:5000",
+        target: "http://100.123.128.116:5000",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/yzr/, ""),
       },
