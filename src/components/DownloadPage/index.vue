@@ -7,7 +7,7 @@
         v-loading="torrents.length === 0 && loading"
         empty-text="暂无下载任务"
       >
-        <el-table-column fixed prop="name" label="文件名" width="300">
+        <el-table-column fixed prop="name" label="文件名" width="300" show-overflow-tooltip>
           <template #default="scope">
             <el-popover placement="bottom" trigger="click">
               <template #reference>
@@ -69,13 +69,14 @@
           label="保存路径"
           width="200"
           sortable
+          show-overflow-tooltip
         />
-        <el-table-column prop="added_on" label="添加时间" width="130" sortable>
+        <el-table-column prop="added_on" label="添加时间" width="130" sortable show-overflow-tooltip>
           <template #default="scope">
             {{ formatDate(scope.row.added_on) }}
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="下载进度" width="180" sortable>
+        <el-table-column prop="progress" label="下载进度" width="180" sortable show-overflow-tooltip>
           <template #default="scope">
             <el-progress
               :percentage="parseFloat((scope.row.progress * 100).toFixed(1))"
