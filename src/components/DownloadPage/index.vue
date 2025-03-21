@@ -1,13 +1,20 @@
 <template>
   <div class="download-page">
-    <div class="download-table">
+    <div class="download-table" v-if="tOrC == 'table'">
       <el-table
         :data="torrents"
         style="width: 100%"
         v-loading="torrents.length === 0 && loading"
         empty-text="暂无下载任务"
+        allow-drag-last-column
       >
-        <el-table-column fixed prop="name" label="文件名" width="300" show-overflow-tooltip>
+        <el-table-column
+          fixed
+          prop="name"
+          label="文件名"
+          width="550"
+          show-overflow-tooltip
+        >
           <template #default="scope">
             <el-popover placement="bottom" trigger="click">
               <template #reference>
@@ -16,8 +23,6 @@
               <el-menu class="right-click-menu">
                 <el-menu-item index="1">
                   <template #title>
-                    <!-- <el-icon><Delete /></el-icon>
-                    <el-text type="danger">删除种子</el-text> -->
                     <el-button
                       type="danger"
                       link
@@ -30,8 +35,6 @@
                 </el-menu-item>
                 <el-menu-item index="2">
                   <template #title>
-                    <!-- <el-icon><Edit /></el-icon>
-                    <el-text type="primary">移动位置</el-text> -->
                     <el-button
                       type="primary"
                       link
@@ -49,7 +52,7 @@
         <el-table-column
           prop="save_path"
           label="保存路径"
-          width="200"
+          width="250"
           sortable
         />
         <el-table-column prop="added_on" label="添加时间" width="130" sortable>
@@ -67,9 +70,7 @@
         </el-table-column>
         <el-table-column label="状态" width="70">
           <template #default="scope">
-            <el-tag
-              :type="stateColor(scope.row.state)"
-            >
+            <el-tag :type="stateColor(scope.row.state)">
               {{ stateText(scope.row.state) }}
             </el-tag>
           </template>
@@ -107,6 +108,57 @@
         <el-table-column prop="num_complete" label="做种数" />
       </el-table>
     </div>
+    <div class="download-card" v-else v-loading="torrents.length === 0 && loading">
+      <el-row :gutter="10">
+        <el-col
+          :xs="24"
+          :sm="12"
+          :md="8"
+          :lg="6"
+          v-for="torrent in torrents"
+          :key="torrent.id"
+        >
+          <el-card class="box-card">
+            <template #header>
+              <el-text line-clamp="1">{{ torrent.name }}</el-text>
+            </template>
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="保存路径"
+                ><el-text line-clamp="1">{{
+                  torrent.save_path
+                }}</el-text></el-descriptions-item
+              >
+              <el-descriptions-item label="添加时间">{{
+                formatDate(torrent.added_on)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="下载进度">
+                <el-progress
+                  :percentage="parseFloat((torrent.progress * 100).toFixed(1))"
+                  :status="torrent.progress !== 1 ? '' : 'success'"
+                />
+              </el-descriptions-item>
+              <el-descriptions-item label="状态">
+                <el-tag :type="stateColor(torrent.state)">
+                  {{ stateText(torrent.state) }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="大小">{{
+                fileSize(torrent.size)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="已下载">{{
+                fileSize(torrent.downloaded)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="速度">{{
+                formatSpeed(torrent.dlspeed)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="剩余">{{
+                formatTime(torrent.eta)
+              }}</el-descriptions-item>
+            </el-descriptions>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 <script setup>
@@ -128,6 +180,7 @@ const timer = ref(null);
 const rid = ref(0);
 const rid2 = ref(null);
 const loading = ref(false);
+const tOrC = ref('table');
 var resData = {};
 
 const getDownloadListBtn = () => {
@@ -254,6 +307,8 @@ onMounted(() => {
   onUnmounted(() => {
     clearInterval(timer.value);
   });
+  tOrC.value = localStorage.getItem("downPageType");
+  // console.log(tOrC.value);
 });
 </script>
 <style scoped>
@@ -269,8 +324,19 @@ onMounted(() => {
 }
 
 .right-click-menu:deep(.el-menu-item) {
-  
   padding: 0 !important;
   height: 30px;
+}
+
+.box-card {
+  /* width: 400px; */
+  margin-bottom: 10px;
+}
+.box-card:deep(.el-card__header) {
+  padding: 8px 10px 2px 10px;
+}
+
+.box-card:deep(.el-descriptions__label) {
+  width: 80px;
 }
 </style>

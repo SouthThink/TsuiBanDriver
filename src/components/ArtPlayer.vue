@@ -139,7 +139,7 @@ export default {
               points: [], // 热力图数据
               filter: (danmu) => danmu.text.length <= 100, // 弹幕载入前的过滤器
               beforeVisible: () => true, // 弹幕显示前的过滤器，返回 true 则可以发送
-              visible: true, // 弹幕层是否可见
+              // visible: true, // 弹幕层是否可见
               emitter: true, // 是否开启弹幕发射器
               maxLength: 200, // 弹幕输入框最大长度, 范围在[1 ~ 1000]
               lockTime: 5, // 输入框锁定时间，范围在[1 ~ 60]
@@ -177,6 +177,7 @@ export default {
 
           // 保存到localStorage
           localStorage.setItem("danmuku", JSON.stringify(rest));
+          console.log("保存到localStorage", rest);
           // console.log("保存到localStorage", rest);
         });
       }, 500);
