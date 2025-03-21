@@ -97,7 +97,8 @@
               <template #header>
                 <el-text>操作</el-text>
               </template>
-              
+              <div style="height: 20px;"></div>
+            </el-card>
             <div class="btns">
               <el-button type="primary" @click="saveRuleBtn" class="btn"
                 >保存</el-button
@@ -106,7 +107,6 @@
                 >删除</el-button
               >
             </div>
-            </el-card>
           </el-scrollbar>
         </el-main>
         <el-aside v-if="selectRssList.length > 0" class="aside" width="40%">
@@ -124,7 +124,7 @@
               >
                 <el-table-column>
                   <template #default="scope">
-                    <el-text line-clamp="1" truncated>{{ scope.row }}</el-text>
+                    <el-text>{{ scope.row }}</el-text>
                   </template>
                 </el-table-column>
               </el-table>
@@ -413,6 +413,7 @@ const saveRuleBtn = () => {
           type: "success",
         });
         getRules();
+        getMatchingArticles();
       } else {
         ElNotification({
           title: "保存失败",
@@ -446,6 +447,7 @@ const select = (key) => {
 .main {
   padding-top: 0;
   height: 600px;
+  position: relative;
 }
 
 .aside {
@@ -468,6 +470,7 @@ const select = (key) => {
   bottom: 25px;
   z-index: 999;
   padding: 0 20px;
+  position: absolute;
 }
 .btn {
   width: 100%;

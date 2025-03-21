@@ -25,14 +25,23 @@ const formatDate = (timestamp) => {
 
 //秒数转换成时间格式
 const formatTime = (seconds) => {
-  if (seconds !== 8640000) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    return `${hours}:${minutes}:${remainingSeconds}`;
-  } else {
+  if (seconds === 8640000) {
     return "--:--:--";
   }
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  // 补零函数
+  const pad = (num) => num.toString().padStart(2, "0");
+
+  // 根据天数判断输出格式
+  return days > 0
+    // ? `${days}天${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`
+    ? `大于${days}天`
+    : `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
 };
 
 //转换下载速度
@@ -50,19 +59,27 @@ const formatSpeed = (speed) => {
 
 //状态转换成中文
 const stateText = (state) => {
-  if (state === "stalledUP") {
-    return "做种";
-  } else if (state === "stalledDL") {
-    return "等待";
-  } else if (state === "checkingUP") {
-    return "检查";
-  } else if (state === "checkingDL") {
-    return "检查";
-  } else if (state === "downloading") {
-    return "下载";
-  } else if (state === "finished") {
-    return "完成";
-  }
+  let stateType = {
+    stalledUP: "做种",
+    stalledDL: "等待",
+    checkingUP: "检查",
+    checkingDL: "检查",
+    downloading: "下载",
+    finished: "完成",
+  };
+  return stateType[state];
+};
+//状态转换成颜色
+const stateColor = (state) => {
+  let stateType = {
+    stalledUP: "info",
+    stalledDL: "primary",
+    checkingUP: "warning",
+    checkingDL: "warning",
+    downloading: "success",
+    finished: "success",
+  };
+  return stateType[state];
 };
 
 const mergeObjects = (obj1, obj2) => {
@@ -70,7 +87,7 @@ const mergeObjects = (obj1, obj2) => {
 
   for (let key in obj1) {
     if (obj2.hasOwnProperty(key)) {
-      if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
+      if (typeof obj1[key] === "object" && typeof obj2[key] === "object") {
         result[key] = mergeObjects(obj1[key], obj2[key]);
       } else {
         result[key] = obj2[key];
@@ -87,61 +104,71 @@ const mergeObjects = (obj1, obj2) => {
   }
 
   return result;
-}
+};
 
-import {addTorrents} from "@/api/download";
+import { addTorrents } from "@/api/download";
 
-const createDownload = (url,name) => {
-    console.log("下载", url);
-    console.log("下载", name);
-    // 弹出弹窗，中间是输入框，标题是请输入订阅链接
-    ElMessageBox.prompt("请输入保存地址", "添加下载任务", {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-    })
-      .then(({ value }) => {
-        ElNotification({
-          title: "正在添加下载任务",
-          message: name,
-          type: "info",
-        });
-        addTorrents({ urls: url, savepath: value }).then((res) => {
-          if (res.code === 200) {
-            ElNotification({
-              title: "添加成功",
-              message: "添加成功",
-              type: "success",
-            });
-          } else {
-            ElNotification({
-              title: "添加失败",
-              message: "添加失败",
-              type: "error",
-            });
-          }
-        });
-      })
-      .catch(() => {
-        console.log("取消添加");
+const createDownload = (url, name) => {
+  console.log("下载", url);
+  console.log("下载", name);
+  // 弹出弹窗，中间是输入框，标题是请输入订阅链接
+  ElMessageBox.prompt("请输入保存地址", "添加下载任务", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+  })
+    .then(({ value }) => {
+      ElNotification({
+        title: "正在添加下载任务",
+        message: name,
+        type: "info",
       });
-  };
+      addTorrents({ urls: url, savepath: value }).then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: "添加成功",
+            message: "添加成功",
+            type: "success",
+          });
+        } else {
+          ElNotification({
+            title: "添加失败",
+            message: "添加失败",
+            type: "error",
+          });
+        }
+      });
+    })
+    .catch(() => {
+      console.log("取消添加");
+    });
+};
 
-  const deepEqual = (a, b) => {
-    if (a === b) return true;
-    if (
-      typeof a !== "object" ||
-      a === null ||
-      typeof b !== "object" ||
-      b === null
-    )
-      return false;
-    let keysA = Object.keys(a),
-      keysB = Object.keys(b);
-    if (keysA.length !== keysB.length) return false;
-    for (let key of keysA) {
-      if (!keysB.includes(key) || !deepEqual(a[key], b[key])) return false;
-    }
-    return true;
+const deepEqual = (a, b) => {
+  if (a === b) return true;
+  if (
+    typeof a !== "object" ||
+    a === null ||
+    typeof b !== "object" ||
+    b === null
+  )
+    return false;
+  let keysA = Object.keys(a),
+    keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (let key of keysA) {
+    if (!keysB.includes(key) || !deepEqual(a[key], b[key])) return false;
   }
+  return true;
+};
 
-export { fileSize, formatDate, formatTime, formatSpeed, stateText, mergeObjects, createDownload, deepEqual };
+export {
+  fileSize,
+  formatDate,
+  formatTime,
+  formatSpeed,
+  stateText,
+  mergeObjects,
+  createDownload,
+  deepEqual,
+  stateColor,
+};

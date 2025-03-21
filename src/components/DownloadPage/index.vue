@@ -43,24 +43,6 @@
                   </template>
                 </el-menu-item>
               </el-menu>
-              <!-- <div class="right-click-menu">
-                <el-button
-                  type="danger"
-                  link
-                  :icon="Delete"
-                  @click="removeTorrent(scope.row)"
-                >
-                  删除种子
-                </el-button>
-                <el-button
-                  type="primary"
-                  link
-                  :icon="Edit"
-                  @click="setLocationBtn(scope.row)"
-                >
-                  移动位置
-                </el-button>
-              </div> -->
             </el-popover>
           </template>
         </el-table-column>
@@ -69,14 +51,13 @@
           label="保存路径"
           width="200"
           sortable
-          show-overflow-tooltip
         />
-        <el-table-column prop="added_on" label="添加时间" width="130" sortable show-overflow-tooltip>
+        <el-table-column prop="added_on" label="添加时间" width="130" sortable>
           <template #default="scope">
             {{ formatDate(scope.row.added_on) }}
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="下载进度" width="180" sortable show-overflow-tooltip>
+        <el-table-column prop="progress" label="下载进度" width="180" sortable>
           <template #default="scope">
             <el-progress
               :percentage="parseFloat((scope.row.progress * 100).toFixed(1))"
@@ -87,7 +68,7 @@
         <el-table-column label="状态" width="70">
           <template #default="scope">
             <el-tag
-              :type="scope.row.state === 'downloading' ? 'success' : 'info'"
+              :type="stateColor(scope.row.state)"
             >
               {{ stateText(scope.row.state) }}
             </el-tag>
@@ -139,6 +120,7 @@ import {
   formatSpeed,
   stateText,
   mergeObjects,
+  stateColor,
 } from "@/utils/utils.js";
 
 const torrents = ref([]);

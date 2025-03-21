@@ -2,10 +2,10 @@ x
 <template>
   <el-tabs v-model="activeName" class="tabs" type="border-card">
     <el-tab-pane label="番剧" name="first">
-      <HomePage v-if="activeName==='first'"/>
+      <HomePage/>
     </el-tab-pane>
     <el-tab-pane label="搜索" name="second" class="secondPage">
-      <SearchPage v-if="activeName==='second'"/>
+      <SearchPage/>
     </el-tab-pane>
     <el-tab-pane label="订阅" name="third">
       <SubscribePage v-if="activeName==='third'"/>
@@ -14,7 +14,7 @@ x
       <DownloadPage v-if="activeName==='fourth'"/>
     </el-tab-pane>
     <el-tab-pane label="设置" name="fifth">
-      <SettingPage v-if="activeName==='fifth'"/>
+      <SettingPage/>
     </el-tab-pane>
   </el-tabs>
 </template>
