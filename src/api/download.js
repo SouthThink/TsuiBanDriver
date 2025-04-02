@@ -219,3 +219,19 @@ export function setLocation(data) {
     },
   });
 }
+
+export function matchRule(data) {
+  return request(BASE_URL,{
+      method: "post",
+      url:"/matchRule",
+      data,
+  });
+}
+
+export function getRuleList(params) {
+  return request(BASE_URL,{
+    url: "/getRuleList",
+    method: "get",
+    params,
+  });
+}

@@ -18,7 +18,7 @@
         >
           <el-row :gutter="24" class="bangumi-card-row" :loading="true">
             <el-col
-              :xs="colNum + 2"
+              :xs="colNum"
               :sm="colNum"
               :md="colNum"
               :lg="colNum"
@@ -74,7 +74,7 @@
         </div>
       </template>
     </el-skeleton>
-    <el-drawer v-model="showBangumi" title="字幕组" direction="rtl" size="50%">
+    <el-drawer v-model="showBangumi" title="字幕组" direction="rtl" :size="setSize">
       <el-table
         :data="subtitleGroupList"
         v-loading="subtitleGroupListLoading"
@@ -104,12 +104,12 @@ import {
   addRssLink,
   getSubgroupInfo,
   addFeed,
-  addTorrents,
 } from "@/api/download.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
 import { ref, computed } from "vue";
 import { createDownload } from "@/utils/utils.js";
+import { setSize } from "@/utils/utils";
 
 const input = ref("");
 const resultList = ref([]);

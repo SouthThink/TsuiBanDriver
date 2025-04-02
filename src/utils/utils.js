@@ -161,6 +161,18 @@ const deepEqual = (a, b) => {
   return true;
 };
 
+import { computed } from "vue";
+//获取屏幕宽度
+const screenWidth = window.innerWidth;
+const isMobile = computed(() => screenWidth <= 768);
+const setSize = computed(() => {
+  if (isMobile.value) {
+    return '100%';
+  } else {
+    return '50%';
+  }
+});
+
 export {
   fileSize,
   formatDate,
@@ -171,4 +183,5 @@ export {
   createDownload,
   deepEqual,
   stateColor,
+  setSize,
 };

@@ -81,8 +81,8 @@
     <el-drawer
       v-model="showBangumi"
       :title="bangumiTitle"
-      direction="btt"
-      size="60%"
+      direction="rtl"
+      :size="size"
     >
       <BangumiCollapse :AnimeId="AnimeId" />
     </el-drawer>
@@ -103,6 +103,7 @@ export default {
       loading: true,
       cover: "",
       search: "",
+      size: "100%",
       navType: [
         { name: "番剧季度", type: "season" },
         { name: "最近更新", type: "lastupdate" },
@@ -118,8 +119,11 @@ export default {
       AnimeId: "",
     };
   },
+  computed: {
+  },
   created() {
     this.getVideoList(this.nav);
+    this.size = window.innerWidth > 768 ? "50%" : "100%";
   },
   components: {
     BangumiCollapse,

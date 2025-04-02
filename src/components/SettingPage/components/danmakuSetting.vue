@@ -83,8 +83,20 @@ interface Mark {
   label: string;
 }
 type Marks = Record<number, Mark | string>;
-
 var danmuku = JSON.parse(localStorage.getItem("danmuku"));
+if (!danmuku) {
+  danmuku = {
+    visible: true,
+    modes: [0, 1, 2],
+    synchronousPlayback: true,
+    antiOverlap: true,
+    opacity: 1,
+    margin: [0, 75],
+    fontSize: 25,
+    speed: 10,
+  };
+  localStorage.setItem("danmuku", JSON.stringify(danmuku));
+}
 const visible = ref(danmuku.visible);
 const modes = ref(danmuku.modes);
 const synchronousPlayback = ref(danmuku.synchronousPlayback);
@@ -140,7 +152,7 @@ const saveSetting = (event) => {
   } else {
     danmuku[event] = eval(event)._value;
   };
-  console.log(danmuku);
+  // console.log(danmuku);
   localStorage.setItem("danmuku", JSON.stringify(danmuku));
 };
 </script>

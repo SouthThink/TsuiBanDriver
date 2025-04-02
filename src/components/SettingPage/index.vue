@@ -15,6 +15,15 @@
     </el-card>
     <el-card class="setting-card">
       <template #header>
+        <el-text size="large">搜索设置</el-text>
+      </template>
+      <div class="setting-item">
+        <el-text>搜索规则</el-text>
+        <searchSetting />
+      </div>
+    </el-card>
+    <el-card class="setting-card">
+      <template #header>
         <el-text size="large">弹幕设置</el-text>
       </template>
       <danmaku-setting />
@@ -25,6 +34,7 @@
 import darkSwitch from "./components/darkSwitch.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
+import searchSetting from "./components/searchSetting.vue";
 </script>
 <style>
 .setting-page {
@@ -51,7 +61,7 @@ import danmakuSetting from "./components/danmakuSetting.vue";
 }
 
 @media (max-width: 768px) {
-  .setting-card{
+  .setting-card {
     width: 100%;
   }
 }
