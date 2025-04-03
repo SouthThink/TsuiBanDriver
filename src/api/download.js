@@ -235,3 +235,19 @@ export function getRuleList(params) {
     params,
   });
 }
+
+export function addEditRule(data) {
+  return request(BASE_URL,{
+      method: "post",
+      url:"/addEditRule",
+      data,
+  });
+}
+
+export function getRuleInfoList(params) {
+  return request(BASE_URL,{
+    url: "/getRuleInfoList",
+    method: "get",
+    params,
+  });
+}

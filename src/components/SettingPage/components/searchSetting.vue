@@ -1,5 +1,4 @@
 <template>
-
     <el-select
       v-model="rule"
       placeholder="请选择规则"

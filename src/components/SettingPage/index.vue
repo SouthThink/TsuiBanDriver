@@ -21,6 +21,10 @@
         <el-text>搜索规则</el-text>
         <searchSetting />
       </div>
+      <div class="setting-item">
+        <el-text>搜索规则列表</el-text>
+        <searchRuleListBtn/>
+      </div>
     </el-card>
     <el-card class="setting-card">
       <template #header>
@@ -35,6 +39,7 @@ import darkSwitch from "./components/darkSwitch.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
+import searchRuleListBtn from "./components/searchRuleListBtn.vue";
 </script>
 <style>
 .setting-page {
