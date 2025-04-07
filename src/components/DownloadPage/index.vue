@@ -165,8 +165,11 @@
                   <el-descriptions-item label="保存路径" :span="6">
                     {{ torrent.save_path }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="添加时间" :span="4">
+                  <el-descriptions-item label="添加时间" :span="2">
                     {{ formatDate(torrent.added_on) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="做种数" :span="2">
+                      {{ torrent.num_complete }}
                   </el-descriptions-item>
                   <el-descriptions-item label="状态" :span="2">
                     <el-tag :type="stateColor(torrent.state)">
@@ -410,7 +413,7 @@ onMounted(() => {
   font-size: 12px;
 }
 .download-table:deep(.el-table .el-table__cell) {
-  padding: 0;
+  padding: 5px;
 }
 .right-click-menu {
   border: 0;
