@@ -251,3 +251,11 @@ export function getRuleInfoList(params) {
     params,
   });
 }
+
+export function deleteRule(data) {
+  return request(BASE_URL,{
+      method: "post",
+      url:"/deleteRule",
+      data,
+  });
+}

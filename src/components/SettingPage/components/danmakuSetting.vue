@@ -7,7 +7,7 @@
   <div class="setting-item">
     <!-- 设置会在第一次观看视频后生成 -->
     <el-text>显示的弹幕类型</el-text>
-    <el-checkbox-group v-model="modes" @change="saveSetting('modes')">
+    <el-checkbox-group v-model="modes" @change="saveSetting('modes')" size="small">
       <el-checkbox-button :value="0">滚动</el-checkbox-button>
       <el-checkbox-button :value="1">顶部</el-checkbox-button>
       <el-checkbox-button :value="2">底部</el-checkbox-button>

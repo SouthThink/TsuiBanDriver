@@ -108,7 +108,43 @@
         <el-table-column prop="num_complete" label="做种数" />
       </el-table>
     </div>
-    <div class="download-card" v-else v-loading="torrents.length === 0 && loading">
+    <div
+      class="download-card"
+      v-else
+      v-loading="torrents.length === 0 && loading"
+    >
+      <div class="sorting-item-container">
+        <el-radio-group
+          v-model="sortingType"
+          class="sorting-item"
+          @change="sortingList"
+        >
+          <el-radio-button
+            v-for="item in sortingTypeList"
+            :key="item.type"
+            :value="item.type"
+            size="small"
+            class="sorting-item-button"
+          >
+            {{ item.name }}
+          </el-radio-button>
+        </el-radio-group>
+        <el-radio-group
+          v-model="sortingWay"
+          class="sorting-item"
+          @change="sortingList"
+        >
+          <el-radio-button
+            v-for="item in sortingWayList"
+            :key="item.type"
+            :value="item.type"
+            size="small"
+            class="sorting-item-button"
+          >
+            {{ item.name }}
+          </el-radio-button>
+        </el-radio-group>
+      </div>
       <el-row :gutter="10">
         <el-col
           :xs="24"
@@ -120,41 +156,69 @@
         >
           <el-card class="box-card">
             <template #header>
-              <el-text line-clamp="1">{{ torrent.name }}</el-text>
+              <el-text line-clamp="1" truncated style="width: 80%;">{{ torrent.name }}</el-text>
+              <el-text line-clamp="1" >{{ fileSize(torrent.size) }}</el-text>
             </template>
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="保存路径"
-                ><el-text line-clamp="1">{{
-                  torrent.save_path
-                }}</el-text></el-descriptions-item
-              >
-              <el-descriptions-item label="添加时间">{{
-                formatDate(torrent.added_on)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="下载进度">
-                <el-progress
-                  :percentage="parseFloat((torrent.progress * 100).toFixed(1))"
-                  :status="torrent.progress !== 1 ? '' : 'success'"
-                />
-              </el-descriptions-item>
-              <el-descriptions-item label="状态">
-                <el-tag :type="stateColor(torrent.state)">
-                  {{ stateText(torrent.state) }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="大小">{{
-                fileSize(torrent.size)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="已下载">{{
-                fileSize(torrent.downloaded)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="速度">{{
-                formatSpeed(torrent.dlspeed)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="剩余">{{
-                formatTime(torrent.eta)
-              }}</el-descriptions-item>
-            </el-descriptions>
+            <el-popover placement="bottom" trigger="click">
+              <template #reference>
+                <el-descriptions :column="6" border size="small">
+                  <el-descriptions-item label="保存路径" :span="6">
+                    {{ torrent.save_path }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="添加时间" :span="4">
+                    {{ formatDate(torrent.added_on) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="状态" :span="2">
+                    <el-tag :type="stateColor(torrent.state)">
+                      {{ stateText(torrent.state) }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="已下载" :span="2">
+                    {{ fileSize(torrent.downloaded) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="剩余" :span="2">
+                    {{ formatTime(torrent.eta) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="速度" :span="2">
+                    {{ formatSpeed(torrent.dlspeed) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="下载进度" :span="6">
+                    <el-progress
+                      :percentage="
+                        parseFloat((torrent.progress * 100).toFixed(1))
+                      "
+                      :status="torrent.progress !== 1 ? '' : 'success'"
+                    />
+                  </el-descriptions-item>
+                </el-descriptions>
+              </template>
+              <el-menu class="right-click-menu">
+                <el-menu-item index="1">
+                  <template #title>
+                    <el-button
+                      type="danger"
+                      link
+                      :icon="Delete"
+                      @click="removeTorrent(torrent)"
+                    >
+                      删除种子
+                    </el-button>
+                  </template>
+                </el-menu-item>
+                <el-menu-item index="2">
+                  <template #title>
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="Edit"
+                      @click="setLocationBtn(torrent)"
+                    >
+                      移动位置
+                    </el-button>
+                  </template>
+                </el-menu-item>
+              </el-menu>
+            </el-popover>
           </el-card>
         </el-col>
       </el-row>
@@ -180,7 +244,21 @@ const timer = ref(null);
 const rid = ref(0);
 const rid2 = ref(null);
 const loading = ref(false);
-const tOrC = ref('table');
+const tOrC = ref("table");
+const sortingType = ref("default");
+const sortingTypeList = [
+  { name: "默认", type: "default" },
+  { name: "名称", type: "name" },
+  { name: "路径", type: "save_path" },
+  { name: "大小", type: "size" },
+  { name: "时间", type: "added_on" },
+  { name: "进度", type: "progress" },
+];
+const sortingWay = ref(false);
+const sortingWayList = [
+  { name: "升序", type: true },
+  { name: "降序", type: false },
+];
 var resData = {};
 
 const getDownloadListBtn = () => {
@@ -203,6 +281,7 @@ const getDownloadListBtn = () => {
       Object.keys(torrent).forEach((key) => {
         torrents.value.push(torrent[key]);
       });
+      sortingList(sortingType.value);
       // console.log(torrents.value);
     })
     .catch((err) => {
@@ -301,6 +380,20 @@ const setLocationBtn = (row) => {
     });
 };
 
+const sortingList = () => {
+  // console.log(sortingType.value);
+  if (sortingType.value === "default") return;
+  if (sortingType.value === "save_path" || sortingType.value === "name") {
+    torrents.value = torrents.value.sort((a, b) => {
+      return sortingWay.value ? a[sortingType.value].localeCompare(b[sortingType.value]) : b[sortingType.value].localeCompare(a[sortingType.value]);
+    });
+  } else {
+    torrents.value = torrents.value.sort((a, b) => {
+      return sortingWay.value ? a[sortingType.value] - b[sortingType.value] : b[sortingType.value] - a[sortingType.value];
+    });
+  }
+};
+
 onMounted(() => {
   getDownloadListBtn();
   timer.value = setInterval(getDownloadListBtn, 3000);
@@ -328,15 +421,48 @@ onMounted(() => {
   height: 30px;
 }
 
+.sorting-item-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sorting-item {
+  margin-bottom: 10px;
+  scrollbar-width: none;
+  overflow: scroll;
+  flex-wrap: nowrap;
+}
+
 .box-card {
   /* width: 400px; */
   margin-bottom: 10px;
 }
+
 .box-card:deep(.el-card__header) {
-  padding: 8px 10px 2px 10px;
+  padding: 6px 10px;
+  border-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  justify-content: space-between;
+}
+
+.box-card:deep(.el-card__body) {
+  padding: 0px;
 }
 
 .box-card:deep(.el-descriptions__label) {
-  width: 80px;
+  /* 阻止换行; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.box-card:deep(.el-descriptions__content) {
+  /* 阻止换行; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
