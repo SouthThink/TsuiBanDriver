@@ -31,6 +31,9 @@
       </template>
       <about/>
     </el-card>
+    <el-text type="info" size="small" class="copyright">
+      Copyright © 2024-2025. SouthThink All rights reserved. 保留一切权利
+    </el-text>
   </div>
 </template>
 <script setup>
@@ -47,6 +50,12 @@ import about from "./components/about.vue";
 
 .setting-card:deep(.el-card__body) {
   padding: 10px;
+}
+
+.copyright {
+  text-align: center;
+  padding: 10px;
+  width: 100%;
 }
 </style>
 <style>

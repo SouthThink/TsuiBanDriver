@@ -259,3 +259,11 @@ export function deleteRule(data) {
       data,
   });
 }
+
+export function allVersion(params) {
+  return request(BASE_URL,{
+    url: "/allVersion",
+    method: "get",
+    params,
+  });
+}
