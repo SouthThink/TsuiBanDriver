@@ -1,21 +1,21 @@
 <template>
   <div class="setting-item">
     <!-- 设置会在第一次观看视频后生成 -->
-    <el-text>弹幕开关</el-text>
+    <el-text>{{translate("弹幕开关")}}</el-text>
     <el-switch v-model="visible" @change="saveSetting('visible')" />
   </div>
   <div class="setting-item">
     <!-- 设置会在第一次观看视频后生成 -->
-    <el-text>显示的弹幕类型</el-text>
+    <el-text>{{translate("显示的弹幕类型")}}</el-text>
     <el-checkbox-group v-model="modes" @change="saveSetting('modes')" size="small">
-      <el-checkbox-button :value="0">滚动</el-checkbox-button>
-      <el-checkbox-button :value="1">顶部</el-checkbox-button>
-      <el-checkbox-button :value="2">底部</el-checkbox-button>
+      <el-checkbox-button :value="0">{{translate("滚动")}}</el-checkbox-button>
+      <el-checkbox-button :value="1">{{translate("顶部")}}</el-checkbox-button>
+      <el-checkbox-button :value="2">{{translate("底部")}}</el-checkbox-button>
     </el-checkbox-group>
   </div>
   <div class="setting-item">
     <!-- 设置会在第一次观看视频后生成 -->
-    <el-text>同步视频速度</el-text>
+    <el-text>{{translate("同步视频速度")}}</el-text>
     <el-switch
       v-model="synchronousPlayback"
       @change="saveSetting('synchronousPlayback')"
@@ -23,11 +23,11 @@
   </div>
 
   <div class="setting-item">
-    <el-text>防弹幕重叠</el-text>
+    <el-text>{{translate("防弹幕重叠")}}</el-text>
     <el-switch v-model="antiOverlap" @change="saveSetting('antiOverlap')" />
   </div>
   <div class="setting-item">
-    <el-text>不透明度</el-text>
+    <el-text>{{translate("不透明度")}}</el-text>
     <el-slider
       v-model="opacity"
       :max="1"
@@ -38,7 +38,7 @@
     />
   </div>
   <div class="setting-item">
-    <el-text>显示区域</el-text>
+    <el-text>{{translate("显示区域")}}</el-text>
     <el-slider
       v-model="margin"
       size="small"
@@ -51,7 +51,7 @@
     />
   </div>
   <div class="setting-item">
-    <el-text>弹幕字号</el-text>
+    <el-text>{{translate("弹幕字号")}}</el-text>
     <el-slider
       v-model="fontSize"
       :min="12"
@@ -62,7 +62,7 @@
     />
   </div>
   <div class="setting-item">
-    <el-text>弹幕速度</el-text>
+    <el-text>{{translate("弹幕速度")}}</el-text>
     <el-slider
       v-model="speed"
       size="small"
@@ -78,6 +78,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from "vue";
 import type { CSSProperties } from "vue";
+import { translate } from "@/utils/translate";
 interface Mark {
   style: CSSProperties;
   label: string;
@@ -115,9 +116,9 @@ const marginMap = {
 const margin = ref(marginMap[danmuku.margin[1]]);
 const marginMarks = reactive<Marks>({
   25: "1/4",
-  50: "半屏",
+  50: translate("半屏"),
   75: "3/4",
-  100: "全屏",
+  100: translate("全屏"),
 });
 const fontSize = ref(danmuku.fontSize);
 const speedMap = {
@@ -135,11 +136,11 @@ const speedMapReverse = {
   100: 1,
 };
 const speedMarks = reactive<Marks>({
-  0: "极慢",
+  0: translate("极慢"),
   25: "",
-  50: "适中",
+  50: translate("适中"),
   75: "",
-  100: "极快",
+  100: translate("极快"),
 });
 const speed = ref(speedMap[danmuku.speed]);
 

@@ -13,13 +13,13 @@
           size="default"
           class="nav-item-button"
         >
-          {{ item.name }}
+          {{ translate(item.name) }}
         </el-radio-button>
       </el-radio-group>
       <el-input
         v-model="search"
         class="search"
-        placeholder="搜索番剧"
+        :placeholder="translate('搜索番剧')"
         clearable
         @input="bangumiSearch"
       />
@@ -94,6 +94,7 @@ import { bangumi } from "@/api/dandanPlay";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
+import { translate } from '@/utils/translate'
 export default {
   data() {
     return {
@@ -131,15 +132,17 @@ export default {
   },
   computed: {},
   methods: {
+    translate,
     getVideoList(e) {
       this.loading = true;
       this.videoList = {};
       this.tagList = [];
-      bangumi(e)
+      bangumi({params:e})
         .then((res) => {
           this.allVideoList = res;
           this.bangumiSearch("");
           this.loading = false;
+          // console.log(res, "番剧列表");
         })
         .catch((err) => {
           ElNotification({
@@ -147,6 +150,7 @@ export default {
             message: err,
             type: "error",
           });
+          console.error(err);
           this.loading = false;
         });
     },

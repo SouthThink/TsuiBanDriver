@@ -3,7 +3,7 @@
     <div class="searchBox">
       <el-input
         v-model="input"
-        placeholder="番剧搜索"
+        :placeholder="translate('番剧搜索')"
         class="input-with-select"
         :prefix-icon="Search"
         @keyup.enter="searchAllInfoBtn"
@@ -35,15 +35,15 @@
 
           <div class="table">
             <el-table :data="currentPageData">
-              <el-table-column property="title" label="标题" />
-              <el-table-column label="操作" width="85">
+              <el-table-column property="title" :label="translate('标题')" />
+              <el-table-column :label="translate('操作')" width="85">
                 <template #header>
                   <el-button
                     type="primary"
                     @click="addSearchRss"
                     style="white-space: nowrap"
                   >
-                    订阅
+                    {{ translate("订阅") }}
                   </el-button>
                 </template>
                 <template #default="scope">
@@ -74,19 +74,24 @@
         </div>
       </template>
     </el-skeleton>
-    <el-drawer v-model="showBangumi" title="字幕组" direction="rtl" :size="setSize">
+    <el-drawer
+      v-model="showBangumi"
+      :title="translate('字幕组')"
+      direction="rtl"
+      :size="setSize"
+    >
       <el-table
         :data="subtitleGroupList"
         v-loading="subtitleGroupListLoading"
         table-layout="auto"
-        empty-text="未找到字幕组"
+        :empty-text="translate('未找到字幕组')"
       >
-        <el-table-column property="subgroupname" label="名称" />
+        <el-table-column property="subgroupname" :label="translate('名称')" />
         <!-- /下载按钮 -->
-        <el-table-column label="操作" width="85">
+        <el-table-column :label="translate('操作')" width="85">
           <template #default="scope">
             <el-button type="primary" @click="getRssLinkBtn(scope.row)">
-              订阅
+              {{ translate("订阅") }}
             </el-button>
           </template>
         </el-table-column>
@@ -110,6 +115,7 @@ import { ElNotification } from "element-plus";
 import { ref, computed } from "vue";
 import { createDownload } from "@/utils/utils.js";
 import { setSize } from "@/utils/utils";
+import { translate } from "@/utils/translate";
 
 const input = ref("");
 const resultList = ref([]);
@@ -144,7 +150,7 @@ const handleCurrentChange = (newPage) => {
 const addSearchRss = () => {
   console.log("订阅", rssItem.value.link);
   ElNotification({
-    title: "正在订阅",
+    title: translate("正在订阅"),
     message: rssItem.value.link,
     type: "info",
   });
@@ -152,21 +158,21 @@ const addSearchRss = () => {
     .then((res) => {
       if (res.code === 200) {
         ElNotification({
-          title: "添加成功",
-          message: "添加成功",
+          title: translate("提示"),
+          message: translate("添加成功"),
           type: "success",
         });
       } else {
         ElNotification({
-          title: "添加失败",
-          message: "添加失败",
+          title: translate("提示"),
+          message: translate("添加失败"),
           type: "error",
         });
       }
     })
     .catch((err) => {
       ElNotification({
-        title: "添加失败",
+        title: translate("添加失败"),
         message: err,
         type: "error",
       });
@@ -191,15 +197,15 @@ const searchAllInfoBtn = () => {
       } else if (res.code == 404) {
         loading.value = false;
         ElNotification({
-          title: "搜索失败",
-          message: "未找到相关番剧",
+          title: translate("搜索失败"),
+          message: translate("未找到相关番剧"),
           type: "warning",
         });
       } else {
         loading.value = false;
         ElNotification({
-          title: "搜索失败",
-          message: "请检查网络连接",
+          title: translate("搜索失败"),
+          message: translate("请检查网络连接"),
           type: "error",
         });
       }
@@ -207,7 +213,7 @@ const searchAllInfoBtn = () => {
     .catch((err) => {
       loading.value = false;
       ElNotification({
-        title: "搜索失败",
+        title: translate("搜索失败"),
         message: err,
         type: "error",
       });
@@ -230,8 +236,8 @@ const getSubgroupInfoBtn = (e) => {
         subtitleGroupList.value = res.data;
       } else {
         ElNotification({
-          title: "获取字幕组失败",
-          message: "请检查网络连接",
+          title: translate("获取字幕组失败"),
+          message: translate("请检查网络连接"),
           type: "error",
         });
       }
@@ -239,7 +245,7 @@ const getSubgroupInfoBtn = (e) => {
     .catch((err) => {
       subtitleGroupListLoading.value = false;
       ElNotification({
-        title: "获取字幕组失败",
+        title: translate("获取字幕组失败"),
         message: err,
         type: "error",
       });
@@ -254,8 +260,8 @@ const getRssLinkBtn = (e) => {
   };
   console.log(data);
   ElNotification({
-    title: "订阅中",
-    message: "请稍等",
+    title: translate("订阅中"),
+    message: translate("请稍等"),
     type: "info",
   });
   addRssLink(data)
@@ -263,21 +269,21 @@ const getRssLinkBtn = (e) => {
       console.log(res);
       if (res.code == 200) {
         ElNotification({
-          title: "订阅成功",
-          message: "请前往订阅列表查看",
+          title: translate("订阅成功"),
+          message: translate("请前往订阅列表查看"),
           type: "success",
         });
       } else {
         ElNotification({
-          title: "订阅失败",
-          message: "请检查网络连接",
+          title: translate("订阅失败"),
+          message: translate("请检查网络连接"),
           type: "warning",
         });
       }
     })
     .catch((err) => {
       ElNotification({
-        title: "订阅失败",
+        title: translate("订阅失败"),
         message: err,
         type: "warning",
       });

@@ -1,48 +1,43 @@
 import request from "@/utils/request";
 
-const BASE_URL = '/api';
+const BASE_URL = "/yzr";
 
 export function welcome(params) {
-  return request(BASE_URL,{
-    url: "/api/v1/welcome",
+  return request(BASE_URL, {
+    url: "/welcome",
     method: "get",
     params,
   });
 }
 
 export function library(params) {
-  return request(BASE_URL,{
-    url: "/api/v1/library",
+  return request(BASE_URL, {
+    url: "/library",
     method: "get",
     params,
   });
 }
 
 export function bangumi(params) {
-  return request(BASE_URL,{
-    url: "/api/v1/library/v2/bangumi/list/nav:" + params,
+  return request(BASE_URL, {
+    url: "/bangumi",
     method: "get",
+    params,
   });
 }
 
 export function bangumiList(params) {
-  return request(BASE_URL,{
-    url: "/api/v1/library/v2/bangumi/details/" + params,
+  return request(BASE_URL, {
+    url: "/bangumiList",
     method: "get",
-  });
-}
-
-export function subtitle(params) {
-  return request("/web1",{
-    url: "/subtitle/" + params + "/ass",
-    method: "get",
+    params,
   });
 }
 
 export function makeHistory(params) {
-  return request("/web1",{
-    url: "video.html",
+  return request(BASE_URL, {
+    url: "/makeHistory",
     method: "get",
-    params
+    params,
   });
 }

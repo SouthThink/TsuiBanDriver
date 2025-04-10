@@ -5,13 +5,13 @@
         :data="torrents"
         style="width: 100%"
         v-loading="torrents.length === 0 && loading"
-        empty-text="暂无下载任务"
+        :empty-text="translate('暂无下载任务')"
         allow-drag-last-column
       >
         <el-table-column
           fixed
           prop="name"
-          label="文件名"
+          :label="translate('文件名')"
           width="550"
           show-overflow-tooltip
         >
@@ -29,7 +29,7 @@
                       :icon="Delete"
                       @click="removeTorrent(scope.row)"
                     >
-                      删除种子
+                      {{translate("删除种子")}}
                     </el-button>
                   </template>
                 </el-menu-item>
@@ -41,7 +41,7 @@
                       :icon="Edit"
                       @click="setLocationBtn(scope.row)"
                     >
-                      移动位置
+                      {{translate("移动位置")}}
                     </el-button>
                   </template>
                 </el-menu-item>
@@ -51,16 +51,16 @@
         </el-table-column>
         <el-table-column
           prop="save_path"
-          label="保存路径"
+          :label="translate('保存路径')"
           width="250"
           sortable
         />
-        <el-table-column prop="added_on" label="添加时间" width="130" sortable>
+        <el-table-column prop="added_on" :label="translate('添加时间')" width="130" sortable>
           <template #default="scope">
             {{ formatDate(scope.row.added_on) }}
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="下载进度" width="180" sortable>
+        <el-table-column prop="progress" :label="translate('下载进度')" width="180" sortable>
           <template #default="scope">
             <el-progress
               :percentage="parseFloat((scope.row.progress * 100).toFixed(1))"
@@ -68,36 +68,36 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="70">
+        <el-table-column :label="translate('状态')" width="70">
           <template #default="scope">
             <el-tag :type="stateColor(scope.row.state)">
               {{ stateText(scope.row.state) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="大小" width="80">
+        <el-table-column :label="translate('大小')" width="80">
           <template #default="scope">
             {{ fileSize(scope.row.size) }}
           </template>
         </el-table-column>
-        <el-table-column prop="downloaded" label="已下载" width="80">
+        <el-table-column prop="downloaded" :label="translate('已下载')" width="80">
           <template #default="scope">
             {{ fileSize(scope.row.downloaded) }}
           </template>
         </el-table-column>
-        <el-table-column prop="dlspeed" label="速度" width="80">
+        <el-table-column prop="dlspeed" :label="translate('速度')" width="80">
           <template #default="scope">
             {{ formatSpeed(scope.row.dlspeed) }}
           </template>
         </el-table-column>
-        <el-table-column prop="eta" label="剩余" sortable width="100">
+        <el-table-column prop="eta" :label="translate('剩余')" sortable width="100">
           <template #default="scope">
             {{ formatTime(scope.row.eta) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="completion_on"
-          label="完成时间"
+          :label="translate('完成时间')"
           width="130"
           sortable
         >
@@ -105,7 +105,7 @@
             {{ formatDate(scope.row.completion_on) }}
           </template>
         </el-table-column>
-        <el-table-column prop="num_complete" label="做种数" />
+        <el-table-column prop="num_complete" :label="translate('做种数')" />
       </el-table>
     </div>
     <div
@@ -126,7 +126,7 @@
             size="small"
             class="sorting-item-button"
           >
-            {{ item.name }}
+            {{ translate(item.name) }}
           </el-radio-button>
         </el-radio-group>
         <el-radio-group
@@ -141,7 +141,7 @@
             size="small"
             class="sorting-item-button"
           >
-            {{ item.name }}
+            {{ translate(item.name) }}
           </el-radio-button>
         </el-radio-group>
       </div>
@@ -162,30 +162,30 @@
             <el-popover placement="bottom" trigger="click">
               <template #reference>
                 <el-descriptions :column="6" border size="small">
-                  <el-descriptions-item label="保存路径" :span="6">
+                  <el-descriptions-item :label="translate('保存路径')" :span="6">
                     {{ torrent.save_path }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="添加时间" :span="2">
+                  <el-descriptions-item :label="translate('添加时间')" :span="2">
                     {{ formatDate(torrent.added_on) }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="做种数" :span="2">
+                  <el-descriptions-item :label="translate('做种数')" :span="2">
                       {{ torrent.num_complete }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="状态" :span="2">
+                  <el-descriptions-item :label="translate('状态')" :span="2">
                     <el-tag :type="stateColor(torrent.state)">
                       {{ stateText(torrent.state) }}
                     </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item label="已下载" :span="2">
+                  <el-descriptions-item :label="translate('已下载')" :span="2">
                     {{ fileSize(torrent.downloaded) }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="剩余" :span="2">
+                  <el-descriptions-item :label="translate('剩余')" :span="2">
                     {{ formatTime(torrent.eta) }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="速度" :span="2">
+                  <el-descriptions-item :label="translate('速度')" :span="2">
                     {{ formatSpeed(torrent.dlspeed) }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="下载进度" :span="6">
+                  <el-descriptions-item :label="translate('下载进度')" :span="6">
                     <el-progress
                       :percentage="
                         parseFloat((torrent.progress * 100).toFixed(1))
@@ -204,7 +204,7 @@
                       :icon="Delete"
                       @click="removeTorrent(torrent)"
                     >
-                      删除种子
+                      {{translate("删除种子")}}
                     </el-button>
                   </template>
                 </el-menu-item>
@@ -216,7 +216,7 @@
                       :icon="Edit"
                       @click="setLocationBtn(torrent)"
                     >
-                      移动位置
+                      {{translate("移动位置")}}
                     </el-button>
                   </template>
                 </el-menu-item>
@@ -241,6 +241,7 @@ import {
   mergeObjects,
   stateColor,
 } from "@/utils/utils.js";
+import { translate } from '@/utils/translate'
 
 const torrents = ref([]);
 const timer = ref(null);
@@ -290,7 +291,7 @@ const getDownloadListBtn = () => {
     .catch((err) => {
       loading.value = false;
       ElNotification({
-        title: "下载列表请求错误",
+        title: translate("下载列表请求错误"),
         message: err,
         type: "error",
       });
@@ -342,11 +343,11 @@ const setLocationBtn = (row) => {
   console.log(row.save_path);
   console.log(row.infohash_v1);
   console.log(row);
-  ElMessageBox.prompt(`当前:${row.save_path}`, "移动位置", {
+  ElMessageBox.prompt(`${translate("当前")}:${row.save_path}`, translate("移动位置"), {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     inputPattern: /\S/,
-    inputErrorMessage: "地址路径不能为空",
+    inputErrorMessage: translate("地址路径不能为空"),
   })
     .then(({ value }) => {
       ElNotification({
@@ -358,13 +359,13 @@ const setLocationBtn = (row) => {
         .then((res) => {
           if (res.code === 200) {
             ElNotification({
-              title: "成功",
-              message: "修改成功",
+              title: translate("成功"),
+              message: translate("修改成功"),
               type: "success",
             });
           } else {
             ElNotification({
-              title: "移动失败",
+              title: translate("移动失败"),
               message: res.msg,
               type: "error",
             });
@@ -372,7 +373,7 @@ const setLocationBtn = (row) => {
         })
         .catch((err) => {
           ElNotification({
-            title: "移动失败",
+            title: translate("移动失败"),
             message: err,
             type: "error",
           });

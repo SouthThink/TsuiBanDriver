@@ -2,14 +2,14 @@
   <div class="subscribe-page">
     <el-button-group class="subscribe-button-group">
       <el-button @click="startRefreshRssList" v-if="timer == null">
-        刷新列表
+        {{translate("刷新列表")}}
       </el-button>
-      <el-button @click="createRss">新建订阅</el-button>
+      <el-button @click="createRss">{{translate("新建订阅")}}</el-button>
       <!-- <el-button>标为已读</el-button> -->
-      <el-button @click="updateAll">更新所有</el-button>
-      <el-button @click="openDownloadMsgBox">RSS下载器</el-button>
+      <el-button @click="updateAll">{{translate("更新所有")}}</el-button>
+      <el-button @click="openDownloadMsgBox">{{translate("RSS下载器")}}</el-button>
     </el-button-group>
-    <el-table :data="tableData" class="subscribe-table" v-loading="tableData.length === 0 && loading" empty-text="暂无订阅">
+    <el-table :data="tableData" class="subscribe-table" v-loading="tableData.length === 0 && loading" :empty-text="translate('暂无订阅')">
       <el-table-column type="expand" width="20">
         <template #default="props">
           <el-table :data="props.row.articles" table-layout="auto">
@@ -30,7 +30,7 @@
                 <el-tooltip
                   class="box-item"
                   effect="dark"
-                  content="直接下载"
+                  :content="translate('直接下载')"
                   placement="top-start"
                 >
                   <el-button
@@ -50,7 +50,7 @@
           <el-tooltip
             class="box-item"
             effect="dark"
-            content="全部已读"
+            :content="translate('全部已读')"
             placement="top-start"
           >
             <el-button
@@ -77,7 +77,7 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="title" label="订阅列表">
+      <el-table-column prop="title" :label="translate('订阅列表')">
         <template #default="scope">
           <el-text v-if="rssName !== scope.row.title">{{
             scope.row.title
@@ -97,7 +97,7 @@
             <el-tooltip
               class="box-item"
               effect="dark"
-              content="刷新"
+              :content="translate('刷新')"
               placement="top-start"
             >
               <el-button
@@ -109,7 +109,7 @@
             <el-tooltip
               class="box-item"
               effect="dark"
-              content="重命名"
+              :content="translate('重命名')"
               placement="top-start"
             >
               <el-button
@@ -122,7 +122,7 @@
             <el-tooltip
               class="box-item"
               effect="dark"
-              content="删除"
+              :content="translate('删除')"
               placement="top-start"
             >
               <el-button
@@ -151,6 +151,7 @@ import {
 import { ref, onMounted, onUnmounted } from "vue";
 import { createDownload, deepEqual } from "@/utils/utils.js";
 import DownloadMsgBox from "@/components/DownloadMsgBox/index.vue";
+import { translate } from '@/utils/translate'
 
 const tableData = ref([]);
 const tableTempData = ref([]);
@@ -325,30 +326,30 @@ const notReName = () => {
 
 const createRss = () => {
   //弹出弹窗，中间是输入框，标题是请输入订阅链接
-  ElMessageBox.prompt("请输入订阅链接", "添加订阅", {
+  ElMessageBox.prompt(translate("请输入订阅链接"), translate("添加订阅"), {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     inputPattern: /^https?:\/\/.+/,
-    inputErrorMessage: "请输入正确的订阅链接",
+    inputErrorMessage: translate("请输入正确的订阅链接"),
   })
     .then(({ value }) => {
       ElNotification({
-        title: "正在添加",
+        title: translate("正在添加"),
         message: value,
         type: "info",
       });
       addFeed({ url: value, path: "" }).then((res) => {
         if (res.code === 200) {
           ElNotification({
-            title: "添加成功",
-            message: "添加成功",
+            title: translate("添加成功"),
+            message: translate("添加成功"),
             type: "success",
           });
           getRssList();
         } else {
           ElNotification({
-            title: "添加失败",
-            message: "添加失败",
+            title: translate("添加失败"),
+            message: translate("添加失败"),
             type: "error",
           });
         }

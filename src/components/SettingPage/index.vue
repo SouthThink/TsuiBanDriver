@@ -2,46 +2,52 @@
   <div class="setting-page">
     <el-card class="setting-card">
       <template #header>
-        <el-text size="large">主题设置</el-text>
+        <el-text size="large">{{translate("主题设置")}}</el-text>
       </template>
       <div class="setting-item">
-        <el-text>深色模式</el-text>
+        <el-text>{{translate("深色模式")}}</el-text>
         <dark-switch />
       </div>
       <div class="setting-item">
-        <el-text>下载页面样式</el-text>
+        <el-text>{{translate("下载页面样式")}}</el-text>
         <down-page-is-table-btn />
+      </div>
+      <div class="setting-item">
+        <el-text>{{translate("语言")}}</el-text>
+        <language/>
       </div>
     </el-card>
     <el-card class="setting-card">
       <template #header>
-        <el-text size="large">搜索设置</el-text>
+        <el-text size="large">{{translate("搜索设置")}}</el-text>
       </template>
         <searchSetting />
     </el-card>
     <el-card class="setting-card">
       <template #header>
-        <el-text size="large">弹幕设置</el-text>
+        <el-text size="large">{{translate("弹幕设置")}}</el-text>
       </template>
       <danmaku-setting />
     </el-card>
     <el-card class="setting-card">
       <template #header>
-        <el-text size="large">关于</el-text>
+        <el-text size="large">{{translate("关于")}}</el-text>
       </template>
       <about/>
     </el-card>
     <el-text type="info" size="small" class="copyright">
-      Copyright © 2024-2025. SouthThink All rights reserved. 保留一切权利
+      {{translate("网页版权声明")}}
     </el-text>
   </div>
 </template>
 <script setup>
 import darkSwitch from "./components/darkSwitch.vue";
+import language from "./components/language.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
 import about from "./components/about.vue";
+import { translate } from '@/utils/translate'
 </script>
 <style scoped>
 .setting-card:deep(.el-card__header) {

@@ -1,13 +1,13 @@
 <template>
   <div class="setting-item">
-    <el-text>搜索规则</el-text>
+    <el-text>{{translate("搜索规则")}}</el-text>
     <el-select
       v-model="rule"
-      placeholder="请选择规则"
+      :placeholder="translate('请选择规则')"
       style="max-width: 60%; width: 240px"
       @change="changeSearchRule"
-      no-data-text="暂无规则"
-      no-match-text="暂无匹配规则"
+      :no-data-text="translate('暂无规则')"
+      :no-match-text="translate('暂无匹配规则')"
     >
       <el-option
         v-for="item in ruleKeyList"
@@ -18,64 +18,64 @@
     </el-select>
   </div>
   <div class="setting-item">
-    <el-text>搜索规则列表</el-text>
-    <el-button type="default" @click="handleClick">查看</el-button>
+    <el-text>{{translate("搜索规则列表")}}</el-text>
+    <el-button type="default" @click="handleClick">{{translate("查看")}}</el-button>
   </div>
   <el-dialog
     v-model="dialogVisible"
-    width="50%"
-    title="搜索规则列表"
+    width="70%"
+    :title="translate('搜索规则列表')"
     @close="handleClose"
     class="rule-list-dialog"
     :fullscreen="isMobile"
   >
-    <el-scrollbar :height="isMobile ? '85vh' : '50vh'" ref="scrollbar">
+    <el-scrollbar :height="isMobile ? '85vh' : '60vh'" ref="scrollbar">
       <div ref="scrollbarContent" class="rule-list">
         <el-card v-if="startAddEditRule" class="rule-card">
           <el-form label-width="120px" class="rule-form" :model="ruleForm">
-            <el-form-item label="规则名称">
+            <el-form-item :label="translate('规则名称')">
               <el-input
                 v-model="ruleForm.title"
-                placeholder="请输入规则名称"
+                :placeholder="translate('请输入规则名称')"
                 prop="title"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="规则ID">
+            <el-form-item :label="translate('规则ID')">
               <el-input
                 v-model="ruleForm.name"
-                placeholder="请输入规则ID"
+                :placeholder="translate('请输入规则ID')"
                 prop="name"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="基础URL">
+            <el-form-item :label="translate('基础URL')">
               <el-input
                 v-model="ruleForm.info.base_url"
-                placeholder="请输入基础URL"
+                :placeholder="translate('请输入基础URL')"
                 prop="base_url"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="RSS路径">
+            <el-form-item :label="translate('RSS路径')">
               <el-input
                 v-model="ruleForm.info.rss_path"
-                placeholder="请输入RSS路径"
+                :placeholder="translate('请输入RSS路径')"
                 prop="rss_path"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="番剧名称参数">
+            <el-form-item :label="translate('番剧名称参数')">
               <el-input
                 v-model="ruleForm.info.query_params_bangumi_name"
-                placeholder="请输入番剧名称参数"
+                :placeholder="translate('请输入番剧名称参数')"
                 prop="query_params_bangumi_name"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="提交规则">
+            <el-form-item :label="translate('提交规则')">
               <el-button type="primary" @click="addRule(ruleForm)"
-                >提交</el-button
+                >{{translate("提交")}}</el-button
               >
             </el-form-item>
           </el-form>
@@ -86,57 +86,57 @@
           class="rule-card"
         >
           <el-form label-width="120px" class="rule-form">
-            <el-form-item label="规则名称">
+            <el-form-item :label="translate('规则名称')">
               <el-input
                 v-model="item.title"
-                placeholder="请输入规则名称"
+                :placeholder="translate('请输入规则名称')"
                 prop="title"
                 :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="规则ID">
+            <el-form-item :label="translate('规则ID')">
               <el-input
                 v-model="item.name"
-                placeholder="请输入规则ID"
+                :placeholder="translate('请输入规则ID')"
                 prop="name"
                 :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="基础URL">
+            <el-form-item :label="translate('基础URL')">
               <el-input
                 v-model="ruleAllInfo[item.name].base_url"
-                placeholder="请输入基础URL"
+                :placeholder="translate('请输入基础URL')"
                 prop="base_url"
                 :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="RSS路径">
+            <el-form-item :label="translate('RSS路径')">
               <el-input
                 v-model="ruleAllInfo[item.name].rss_path"
-                placeholder="请输入RSS路径"
+                :placeholder="translate('请输入RSS路径')"
                 prop="rss_path"
                 :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="番剧名称参数">
+            <el-form-item :label="translate('番剧名称参数')">
               <el-input
                 v-model="ruleAllInfo[item.name].query_params_bangumi_name"
-                placeholder="请输入番剧名称参数"
+                :placeholder="translate('请输入番剧名称参数')"
                 prop="query_params_bangumi_name"
                 :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>
-            <el-form-item label="操作" v-if="isEdit">
+            <el-form-item :label="translate('操作')" v-if="isEdit">
               <el-button type="primary" @click="editRule(item)">
-                提交
+                {{translate("提交")}}
               </el-button>
               <el-button type="danger" @click="deleteRuleBtnClick(item.name)"
-                >删除</el-button
+                >{{translate("删除")}}</el-button
               >
             </el-form-item>
           </el-form>
@@ -145,13 +145,13 @@
     </el-scrollbar>
     <template #footer>
       <el-button type="primary" @click="editBtnClick">
-        {{ isEdit ? "完成" : "编辑" }}
+        {{ isEdit ? translate("完成") : translate("编辑") }}
       </el-button>
       <el-button
         :type="startAddEditRule ? 'danger' : 'primary'"
         @click="addBtnClick"
       >
-        {{ startAddEditRule ? "取消" : "新建" }}
+        {{ startAddEditRule ? translate("取消") : translate("新建") }}
       </el-button>
     </template>
   </el-dialog>
@@ -165,6 +165,7 @@ import {
   deleteRule,
   matchRule,
 } from "@/api/download.js";
+import { translate } from '@/utils/translate'
 const rule = ref("");
 const dialogVisible = ref(false);
 const startAddEditRule = ref(false);
@@ -195,7 +196,7 @@ const changeSearchRule = (e) => {
     // console.log(res, "修改规则结果");
     if (res.code === 200) {
       ElMessage({
-        message: "修改成功",
+        message: translate("修改成功"),
         type: "success",
       });
     } else {
@@ -223,17 +224,17 @@ getRuleListFun();
 const addRule = (data) => {
   if(data.name === "" || data.title === ""){
     ElNotification({
-      message: "规则名称和规则ID不能为空",
+      message: translate("规则名称和规则ID不能为空"),
       type: "error",
-      title: "提示",
+      title: translate("提示"),
     });
     return;
   }
   if (data.info.base_url === "" || data.info.rss_path === "" || data.info.query_params_bangumi_name === "") {
     ElNotification({
-      message: "基础URL、RSS路径和番剧名称参数不能为空",
+      message: translate("基础URL、RSS路径和番剧名称参数不能为空"),
       type: "error",
-      title: "提示",
+      title: translate("提示"),
     });
     return;
   }
@@ -243,7 +244,7 @@ const addRule = (data) => {
     ElNotification({
       message: res.msg,
       type: res.code === 200 ? "success" : "error",
-      title: "提示",
+      title: translate("提示"),
     });
     getRuleListFun();
     scrollToBottom();

@@ -5,11 +5,16 @@
 <script>
 import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
+import tw from "artplayer/dist/i18n/zh-tw.js";
+import jp from "artplayer/dist/i18n/jp.js";
+import { translate } from '@/utils/translate'
+
 
 export default {
   data() {
     return {
       instance: null,
+      lang: "zh-cn",
     };
   },
   watch: {
@@ -30,9 +35,23 @@ export default {
   mounted() {
     // this.getSubtitle(videoId);
     // this.InitPlayer();
+    this.getLang();
   },
   methods: {
     //初始化播放器
+    translate,
+    getLang() {
+      if (localStorage.getItem("lang") === "zh-TW") {
+        this.lang = "tw";
+      } else if (localStorage.getItem("lang") === "en_US") {
+        this.lang = "en";
+      } else if (localStorage.getItem("lang") === "ja_JP") {
+        this.lang = "jp";
+      } else {
+        this.lang = "zh-cn";
+      }
+      console.log("语言", this.lang);
+    },
     InitPlayer() {
       console.log("初始化播放器");
       this.destroyPlayer();
@@ -44,7 +63,7 @@ export default {
           poster: `/api/api/v1/image/id/${this.videoId}`,
           // 字幕
           subtitle: {
-            url: `/web1/subtitle/${this.videoId}/ass`,
+            url: `/yzr/getSubtitle?videoId=${this.videoId}`,
             type: "ass",
             encoding: "utf-8",
             escape: true,
@@ -53,12 +72,17 @@ export default {
               "font-size": "18px",
             },
           },
+          i18n: {
+            tw: tw,
+            jp: jp,
+          },
+          lang: this.lang,
           //设置
           setting: true,
           settings: [
             {
-              html: "字幕",
-              tooltip: "显示",
+              html: this.translate("字幕"),
+              tooltip: this.translate("显示"),
               icon: '<img width="22" heigth="22" src="/img/subtitle.svg">',
               switch: true,
               onSwitch: this.subtitleChange,
@@ -182,6 +206,7 @@ export default {
         });
       }, 500);
     },
+
     destroyPlayer() {
       if (this.instance && this.instance.destroy) {
         console.log("销毁播放器");
@@ -190,7 +215,7 @@ export default {
     },
     subtitleChange(item) {
       console.log("字幕", item.switch);
-      item.tooltip = item.switch ? "隐藏" : "显示";
+      item.tooltip = item.switch ? this.this.translate("隐藏") : this.translate("显示");
       this.instance.subtitle.show = !item.switch;
       return !item.switch;
     },

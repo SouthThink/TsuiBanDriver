@@ -4,8 +4,8 @@
       inline-prompt
       active-color="var(--el-fill-color-dark)"
       inactive-color="var(--el-color-primary)"
-      active-text="暗"
-      inactive-text="亮"
+      :active-text="translate('暗')"
+      :inactive-text="translate('亮')"
       :active-action-icon="Moon"
       :inactive-action-icon="Sunny"
       class="dark-switch"
@@ -15,6 +15,7 @@
 <script setup>
 import { useDark, useToggle } from "@vueuse/core";
 import { Moon, Sunny } from "@element-plus/icons-vue";
+import { translate } from "@/utils/translate";
 
 const isDark = useDark();
 const toggleDark = useToggle(isDark);

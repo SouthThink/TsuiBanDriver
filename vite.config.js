@@ -27,12 +27,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      "/web1": {
-        target: "http://100.123.128.116:8888/web1",
-        // target: 'http://192.168.10.37:8888/web1',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/web1/, ""),
-      },
       "/yzr": {
         target: "http://191.0.0.17:5000",
         // target: "http://192.168.10.37:5000",

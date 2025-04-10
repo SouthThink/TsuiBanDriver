@@ -18,8 +18,7 @@
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
-import { makeHistory } from "@/api/dandanPlay.js";
-import { subtitle } from "@/api/dandanPlay.js";
+// import { makeHistory } from "@/api/dandanPlay.js";
 export default {
   data() {
     return {
@@ -41,14 +40,14 @@ export default {
         this.AnimeId = route.query.AnimeId;
         console.log("watch", this.videoId, this.AnimeId);
 
-        makeHistory({ id: this.videoId }).then(
-          (res) => {
-            console.log(res);
-          },
-          (err) => {
-            console.log(err);
-          }
-        );
+        // makeHistory({ id: this.videoId }).then(
+        //   (res) => {
+        //     console.log(res);
+        //   },
+        //   (err) => {
+        //     console.log(err);
+        //   }
+        // );
       },
       immediate: true,
     },
@@ -63,14 +62,6 @@ export default {
   mounted() {
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
-    // subtitle(this.videoId).then(
-    //   (res) => {
-    //     console.log(res);
-    //   },
-    //   (err) => {
-    //     console.log(err);
-    //   }
-    // )
   },
   methods: {
     getInstance(art) {

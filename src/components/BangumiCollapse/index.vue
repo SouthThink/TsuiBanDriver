@@ -96,7 +96,7 @@ export default {
       this.bangumiList = [];
       this.activeNames = [];
       this.bangumiTitle = e.Title;
-      bangumiList(e)
+      bangumiList({params:e})
         .then((res) => {
           console.log("返回的集数", res);
           this.bangumiList = res.Episodes;

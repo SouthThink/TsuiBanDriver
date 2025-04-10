@@ -1,7 +1,7 @@
 <template>
   <div class="about-container" v-for="(item, index) in aboutList" :key="index">
     <div class="setting-item" v-if="item.name !== '分割线'">
-      <el-text>{{ item.name }}</el-text>
+      <el-text>{{ translate(item.name) }}</el-text>
       <el-link :href="item.href">{{ item.value }}</el-link>
     </div>
     <el-divider v-else/>
@@ -12,6 +12,7 @@ import { ref } from "vue";
 import { getVersion } from "@/utils/version.js";
 import { welcome } from "@/api/dandanPlay";
 import { allVersion } from "@/api/download";
+import { translate } from '@/utils/translate';
 const originList = ref([
   { name: "前端版本", value: getVersion() },
   { name: "作者", value: "@SouthThink", href: "https://github.com/SouthThink"},
@@ -35,7 +36,7 @@ welcome().then((res) => {
 });
 
 allVersion().then((res) => {
-  console.log(res.data.app_info, "后端的版本");
+  // console.log(res.data.app_info, "后端的版本");
   // 数组合并
   var arr = originList.value;
   arr.push({ name: "分割线" });
