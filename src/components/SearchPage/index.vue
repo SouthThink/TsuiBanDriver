@@ -109,7 +109,7 @@ import {
   addRssLink,
   getSubgroupInfo,
   addFeed,
-} from "@/api/download.js";
+} from "@/api/yzrServer.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
 import { ref, computed } from "vue";

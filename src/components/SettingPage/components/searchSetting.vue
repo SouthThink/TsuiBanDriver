@@ -164,7 +164,7 @@ import {
   getRuleList,
   deleteRule,
   matchRule,
-} from "@/api/download.js";
+} from "@/api/yzrServer.js";
 import { translate } from '@/utils/translate'
 const rule = ref("");
 const dialogVisible = ref(false);

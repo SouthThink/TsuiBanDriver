@@ -147,7 +147,7 @@ import {
   moveItem,
   markAsRead,
   addFeed,
-} from "@/api/download";
+} from "@/api/yzrServer";
 import { ref, onMounted, onUnmounted } from "vue";
 import { createDownload, deepEqual } from "@/utils/utils.js";
 import DownloadMsgBox from "@/components/DownloadMsgBox/index.vue";

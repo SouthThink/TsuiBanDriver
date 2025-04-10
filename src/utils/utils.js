@@ -106,7 +106,7 @@ const mergeObjects = (obj1, obj2) => {
   return result;
 };
 
-import { addTorrents } from "@/api/download";
+import { addTorrents } from "@/api/yzrServer";
 
 const createDownload = (url, name) => {
   console.log("下载", url);

@@ -229,7 +229,7 @@
   </div>
 </template>
 <script setup>
-import { getDownloadList, deleteTorrents, setLocation } from "@/api/download";
+import { getDownloadList, deleteTorrents, setLocation } from "@/api/yzrServer";
 import { ref, onMounted, onUnmounted } from "vue";
 import { Delete, Edit } from "@element-plus/icons-vue";
 import {

@@ -18,7 +18,6 @@
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
-// import { makeHistory } from "@/api/dandanPlay.js";
 export default {
   data() {
     return {
@@ -39,15 +38,6 @@ export default {
         this.videoId = route.query.videoId;
         this.AnimeId = route.query.AnimeId;
         console.log("watch", this.videoId, this.AnimeId);
-
-        // makeHistory({ id: this.videoId }).then(
-        //   (res) => {
-        //     console.log(res);
-        //   },
-        //   (err) => {
-        //     console.log(err);
-        //   }
-        // );
       },
       immediate: true,
     },

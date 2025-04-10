@@ -143,7 +143,7 @@ import {
   getRssItems,
   matchingArticles,
   removeRule,
-} from "@/api/download";
+} from "@/api/yzrServer";
 import {
   CirclePlus,
   Edit,
