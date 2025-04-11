@@ -28,7 +28,6 @@ const originList = ref([
   },
   { name: "分割线" },
 ]);
-const dandanPlayVersion = ref("0.0.0");
 const aboutList = ref(JSON.parse(localStorage.getItem("aboutList")));
 
 allVersion().then((res) => {

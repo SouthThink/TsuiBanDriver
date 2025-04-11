@@ -6,7 +6,7 @@
 import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
 import tw from "artplayer/dist/i18n/zh-tw.js";
-import jp from "artplayer/dist/i18n/jp.js";
+// import jp from "artplayer/dist/i18n/jp.js";
 import { translate } from '@/utils/translate'
 
 
@@ -46,7 +46,7 @@ export default {
       } else if (localStorage.getItem("lang") === "en_US") {
         this.lang = "en";
       } else if (localStorage.getItem("lang") === "ja_JP") {
-        this.lang = "jp";
+        this.lang = "en";
       } else {
         this.lang = "zh-cn";
       }
@@ -74,7 +74,7 @@ export default {
           },
           i18n: {
             tw: tw,
-            jp: jp,
+            // jp: jp,
           },
           lang: this.lang,
           //设置

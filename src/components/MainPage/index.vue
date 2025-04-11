@@ -170,7 +170,7 @@ export default {
           this.tagList.sort();
         }
       });
-      // console.log(this.videoList);
+      console.log(this.videoList);
     },
     showDrawer(e) {
       this.showBangumi = true;

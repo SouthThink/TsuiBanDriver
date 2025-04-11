@@ -32,6 +32,8 @@ export default {
   新建: "New",
   取消: "Cancel",
   编辑: "Edit",
+  确定: "Confirm",
+  "确定删除该订阅吗？": "Are you sure you want to delete this subscription?",
   规则名称和规则ID不能为空: "Rule name and rule ID cannot be empty",
   "基础URL、RSS路径和番剧名称参数不能为空":
     "Base URL, RSS path, and bangumi name parameter cannot be empty",
@@ -148,4 +150,7 @@ export default {
   字幕: "Subtitles",
   显示: "Show",
   隐藏: "Hide",
+  已看到最新: "Seen Latest",
+  已看: "Watched ",
+  话: " episodes",
 };

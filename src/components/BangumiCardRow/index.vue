@@ -12,9 +12,12 @@
           truncated
           style="color: white"
           v-if="episodeWatched != episodeTotal"
-          >已看到第{{ episodeWatched }}话</el-text
         >
-        <el-text style="color: white" v-else>已看到最新</el-text>
+          {{ translate("已看") + episodeWatched + translate("话") }}
+        </el-text>
+        <el-text style="color: white" v-else>{{
+          translate("已看到最新")
+        }}</el-text>
       </div>
     </div>
     <div class="bangumi-item-info">
@@ -26,6 +29,7 @@
 </template>
 <script setup>
 import { onMounted } from "vue";
+import { translate } from "@/utils/translate";
 
 const props = defineProps({
   imgUrl: String,

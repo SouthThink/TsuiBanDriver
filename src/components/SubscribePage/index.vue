@@ -190,8 +190,8 @@ const getRssList = () => {
         }
       } else {
         ElNotification({
-          title: "订阅列表请求失败",
-          message: "请检查网络连接",
+          title: translate("订阅列表请求失败"),
+          message: translate("请检查网络连接"),
           type: "warning",
         });
         clearInterval(timer.value);
@@ -201,7 +201,7 @@ const getRssList = () => {
     .catch((err) => {
       loading.value = false;
       ElNotification({
-        title: "订阅列表请求错误",
+        title: translate("订阅列表请求错误"),
         message: err,
         type: "error",
       });
@@ -219,29 +219,29 @@ const download = (url, row) => {
 const deleteRss = (row) => {
   console.log(row.title);
   //确认提示
-  ElMessageBox.confirm("确定删除该订阅吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
+  ElMessageBox.confirm(translate("确定删除该订阅吗？"), translate("提示"), {
+    confirmButtonText: translate("确定"),
+    cancelButtonText: translate("取消"),
     type: "warning",
   })
     .then(() => {
       ElNotification({
-        title: "正在删除",
+        title: translate("正在删除"),
         message: row.title,
         type: "info",
       });
       removeItem({ path: row.title }).then((res) => {
         if (res.code === 200) {
           ElNotification({
-            title: "删除成功",
-            message: "删除成功",
+            title: translate("提示"),
+            message: translate("删除成功"),
             type: "success",
           });
           getRssList();
         } else {
           ElNotification({
-            title: "删除失败",
-            message: "删除失败",
+            title: translate("提示"),
+            message: translate("删除失败"),
             type: "error",
           });
         }
@@ -258,14 +258,14 @@ const refresh = (row) => {
   refreshItem({ itemPath: row.title }).then((res) => {
     if (res.code === 200) {
       ElNotification({
-        title: "正在刷新",
+        title: translate("正在刷新"),
         message: row.title,
         type: "info",
       });
     } else {
       ElNotification({
-        title: "刷新失败",
-        message: "刷新失败",
+        title: translate("提示"),
+        message: translate("刷新失败"),
         type: "error",
       });
     }
@@ -295,15 +295,15 @@ const reName = (row) => {
   // console.log(row.isTrusted);
   // console.log(row.title);
   ElNotification({
-    title: "正在重命名",
+    title: translate("正在重命名"),
     message: rssName.value,
     type: "info",
   });
   moveItem({ itemPath: rssName.value, destPath: newName.value }).then((res) => {
     if (res.code === 200) {
       ElNotification({
-        title: "重命名成功",
-        message: "重命名成功",
+        title: translate("提示"),
+        message: translate("重命名成功"),
         type: "success",
       });
       row.title = newName.value;
@@ -311,8 +311,8 @@ const reName = (row) => {
       notReName();
     } else {
       ElNotification({
-        title: "重命名失败",
-        message: "重命名失败",
+        title: translate("提示"),
+        message: translate("重命名失败"),
         type: "error",
       });
     }
@@ -327,8 +327,8 @@ const notReName = () => {
 const createRss = () => {
   //弹出弹窗，中间是输入框，标题是请输入订阅链接
   ElMessageBox.prompt(translate("请输入订阅链接"), translate("添加订阅"), {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
+    confirmButtonText: translate("确定"),
+    cancelButtonText: translate("取消"),
     inputPattern: /^https?:\/\/.+/,
     inputErrorMessage: translate("请输入正确的订阅链接"),
   })
@@ -341,14 +341,14 @@ const createRss = () => {
       addFeed({ url: value, path: "" }).then((res) => {
         if (res.code === 200) {
           ElNotification({
-            title: translate("添加成功"),
+            title: translate("提示"),
             message: translate("添加成功"),
             type: "success",
           });
           getRssList();
         } else {
           ElNotification({
-            title: translate("添加失败"),
+            title: translate("提示"),
             message: translate("添加失败"),
             type: "error",
           });

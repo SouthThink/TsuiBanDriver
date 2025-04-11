@@ -10,7 +10,7 @@
         v-for="(item, index) in bangumiList"
         :key="index"
         :name="index"
-        :title="item.EpisodeTitle + ' ' + formatReadTime(item.AirDate)"
+        :title="item.EpisodeTitle + ' ' + formatReadTime(item.AirDate) + ' ' +  (item.AirStatus == '1'? '已观看':'未观看')"
         class="bangumi-collapse-item"
         disabled
       >
