@@ -1,5 +1,5 @@
 <template>
-  <el-radio-group v-model="downPageIsTable" @change="changeDownPageIsTable">
+  <el-radio-group v-model="downPageIsTable" @change="changeDownPageIsTable" size="small">
     <el-radio-button :label="translate('表格')" value="table" />
     <el-radio-button :label="translate('卡片')" value="card" />
   </el-radio-group>

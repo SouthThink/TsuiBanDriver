@@ -80,6 +80,7 @@ export default {
     },
     routeToVideo(e) {
       if (this.$route.path == "/video") {
+        this.showBangumiList(this.AnimeId);
         this.$router.push({
           name: "video",
           query: { videoId: e.Id, AnimeId: e.AnimeId },

@@ -73,6 +73,15 @@
               >
               </el-input>
             </el-form-item>
+            <el-form-item :label="translate('RSS后缀')">
+              <el-input
+                v-model="ruleForm.rss_suffix"
+                :placeholder="translate('请输入RSS后缀(可选)')"
+                prop="rss_suffix"
+                :disabled="!isEdit"
+              >
+              </el-input>
+            </el-form-item>
             <el-form-item :label="translate('提交规则')">
               <el-button type="primary" @click="addRule(ruleForm)"
                 >{{translate("提交")}}</el-button
@@ -127,6 +136,15 @@
                 v-model="ruleAllInfo[item.name].query_params_bangumi_name"
                 :placeholder="translate('请输入番剧名称参数')"
                 prop="query_params_bangumi_name"
+                :disabled="!isEdit"
+              >
+              </el-input>
+            </el-form-item>
+            <el-form-item :label="translate('RSS后缀')">
+              <el-input
+                v-model="ruleAllInfo[item.name].rss_suffix"
+                :placeholder="translate('请输入RSS后缀(可选)')"
+                prop="rss_suffix"
                 :disabled="!isEdit"
               >
               </el-input>
@@ -261,6 +279,7 @@ const addBtnClick = () => {
       base_url: "",
       rss_path: "",
       query_params_bangumi_name: "",
+      rss_suffix: "",
     },
   };
 };
