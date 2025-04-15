@@ -80,7 +80,7 @@ TsuiBanDriver 是一个基于 Vue 3 和 Element Plus 的前端项目，主要用
 3. 提交您的更改并创建一个 Pull Request。
 
 ## 许可证
-本项目采用 MIT 许可证。有关详细信息，请查看 LICENSE 文件。
+本项目采用 CC BY-NC 4.0 许可证。有关详细信息，请查看 LICENSE 文件。
 
 ---
 

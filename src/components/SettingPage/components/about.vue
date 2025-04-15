@@ -2,7 +2,8 @@
   <div class="about-container" v-for="(item, index) in aboutList" :key="index">
     <div class="setting-item" v-if="item.name !== '分割线'">
       <el-text>{{ translate(item.name) }}</el-text>
-      <el-link :href="item.href">{{ item.value }}</el-link>
+      <!-- <el-link :href="item.href">{{ item.value }}</el-link> -->
+      <el-link @click="openHref(item.href)">{{ item.value }}</el-link>
     </div>
     <el-divider v-else />
   </div>
@@ -35,6 +36,11 @@ allVersion().then((res) => {
   aboutList.value = originList.value;
   localStorage.setItem("aboutList", JSON.stringify(originList.value));
 });
+
+const openHref = (href) => {
+  if (!href) return;
+  window.open(href, "_blank");
+};
 </script>
 <style lang="css" scoped>
 .about-container:deep(.el-divider) {
