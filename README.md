@@ -1,64 +1,30 @@
-# TsuiBanDriver 项目说明文档
-
 ## 项目简介
-TsuiBanDriver 是一个基于 Vue 3 和 Element Plus 的前端项目，主要用于展示和管理动漫视频内容。项目支持暗黑模式切换、视频播放、弹幕显示等功能。
+TsuiBanDriver 是一个基于 Vue 3 和 Element Plus 的前端项目，主要用于一站式完成搜索、下载、识别、观看番剧的功能。项目支持弹幕显示功能。
 
-## 目录结构
-```
-├── jsconfig.json
-├── package.json
-├── public
-│   └── img
-├── README.md
-├── src
-│   ├── api
-│   │   ├── dandanPlay.js
-│   │   └── download.js
-│   ├── App.vue
-│   ├── assets
-│   ├── components
-│   │   ├── ArtPlayer.vue
-│   │   ├── BangumiCardRow
-│   │   │   └── index.vue
-│   │   ├── BangumiCollapse
-│   │   │   └── index.vue
-│   │   ├── MainPage
-│   │   │   └── index.vue
-│   │   ├── SearchPage
-│   │   │   └── index.vue
-│   │   └── SubscribePage
-│   │       └── index.vue
-│   ├── config
-│   ├── main.js
-│   ├── router
-│   │   └── index.js
-│   ├── utils
-│   │   └── request.js
-│   └── views
-│       ├── HomeView.vue
-│       └── video.vue
-└── vite.config.js
-```
 
 ## 功能特点
 - **视频播放**：使用 ArtPlayer 播放器进行视频播放，支持弹幕显示。
-- **暗黑模式**：支持亮暗模式切换，提升视觉体验。
-- **视频管理**：可以按照不同的分类（如番剧季度、最近更新等）管理视频。
-- **搜索功能**：提供搜索番剧的功能，方便用户快速找到想要的视频。
+- **番剧搜索**：提供番剧搜索功能，方便用户快速找到想要的番剧。
+- **添加规则**：支持用户自定义添加rss订阅源网站，可以使用自己喜欢的网站。
+- **视频下载**：支持番剧的下载功能，用户可以将喜欢的番剧下载到本地。
+- **番剧识别**：通过调用番剧识别 API，可以识别番剧的名称、分类等信息。
+- **弹幕显示**：支持自动识别网络弹幕，给你无别于视频网站的追番体验。
 
 ## 依赖说明
 - `vue`: Vue.js 是一个用于构建用户界面的渐进式框架。
-- `vue-router`: Vue Router 是 Vue.js 的官方路由管理器。
 - `element-plus`: 一套为开发者、设计师和产品经理准备的基于 Vue 3.0 的组件库。
 - `axios`: 一个基于 promise 的 HTTP 库，用于浏览器和 node.js。
 - `artplayer`: 一个轻量、可定制、开源的视频播放器。
 - `artplayer-plugin-danmuku`: ArtPlayer 的弹幕插件。
-- `artplayer-plugin-libass`: ArtPlayer 的字幕插件。
+- [`server-for-TsuiBanDriver`](https://github.com/DoubleEnd/server_for_TsuiBanDriver): 后端服务，用于处理添加规则，番剧搜索、等功能。
+- `qBittorrent`: 一个开源的 BitTorrent 客户端，用于下载和分享文件。
+- `dandanPlay`: 一个专注于番剧网络识别、获取弹幕的全功能播放器。用于识别番剧名称、分类等信息并获取弹幕。
 
 ## 安装与运行
+### 方法1
 1. 克隆项目到本地：
    ```
-   git clone [项目地址]
+   git clone https://github.com/SouthThink/TsuiBanDriver.git
    ```
 2. 进入项目目录：
    ```
@@ -72,16 +38,52 @@ TsuiBanDriver 是一个基于 Vue 3 和 Element Plus 的前端项目，主要用
    ```
    npm run dev
    ```
+### 方法2
+1. 克隆项目到本地：
+   ```
+   git clone https://github.com/SouthThink/TsuiBanDriver.git
+   ```
+2. 进入项目目录：
+   ```
+   cd TsuiBanDriver
+   ```
+3. 安装依赖：
+   ```
+   npm install
+   ```
+4. 构建项目：
+   ```
+   npm run build 
+   ```
+5. 配置nginx.conf:
+   ```
+   server {
+       listen       8086;
+       //可自定义端口
+       server_name  tsuiban;
 
-## 贡献指南
-如果您对改进 TsuiBanDriver 项目有任何建议或想要贡献代码，请遵循以下步骤：
-1. Fork 项目到您的 GitHub 账户。
-2. 创建一个新的分支进行修改。
-3. 提交您的更改并创建一个 Pull Request。
+       location / {
+           root   html/dist;
+           index  index.html index.htm;
+           try_files $uri $uri/ /index.html;
+       }
+
+		location ^~ /api {
+			proxy_pass http://127.0.0.1:8888/;
+         //dandanPlay开放的api接口
+		}
+		
+        location ^~ /yzr {
+			proxy_pass http://127.0.0.1:5000/;
+         //server-for-TsuiBanDriver开放的api接口
+		}
+
+    }
+   ```
+
+
 
 ## 许可证
-本项目采用 CC BY-NC 4.0 许可证。有关详细信息，请查看 LICENSE 文件。
+本项目采用 AGPL-3.0 许可证。有关详细信息，请查看 LICENSE 文件。
 
 ---
-
-以上是 TsuiBanDriver 项目的 README 文档。请根据实际情况替换 `[项目地址]` 和 LICENSE 文件的相关信息。希望这个 README 文档能够帮助您更好地介绍和维护您的项目。
