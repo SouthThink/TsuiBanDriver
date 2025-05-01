@@ -8,30 +8,34 @@
       draggable
     >
       <el-container>
-        <el-aside width="15%">
-          <el-menu
-            default-active="0"
-            @select="handleMenuSelect"
-            v-if="ruleNameList.length > 0"
-          >
-            <el-menu-item
-              v-for="(item, index) in ruleNameList"
-              :key="index"
-              :index="item"
+        <el-aside width="auto">
+          <el-scrollbar height="600px">
+            <el-menu
+              default-active="0"
+              @select="handleMenuSelect"
+              v-if="ruleNameList.length > 0"
             >
-              <template #title>
-                <el-icon v-if="ruleInfo[item].enabled"><CircleCheck /></el-icon>
-                <el-icon v-else><CircleClose /></el-icon>
-                <span>{{ item }}</span>
-              </template>
-            </el-menu-item>
-            <el-menu-item index="新建规则">
-              <template #title>
-                <el-icon><CirclePlus /></el-icon>
-                <span>新建规则</span>
-              </template>
-            </el-menu-item>
-          </el-menu>
+              <el-menu-item
+                v-for="(item, index) in ruleNameList"
+                :key="index"
+                :index="item"
+              >
+                <template #title>
+                  <el-icon v-if="ruleInfo[item].enabled"
+                    ><CircleCheck
+                  /></el-icon>
+                  <el-icon v-else><CircleClose /></el-icon>
+                  <span>{{ item }}</span>
+                </template>
+              </el-menu-item>
+              <el-menu-item index="新建规则">
+                <template #title>
+                  <el-icon><CirclePlus /></el-icon>
+                  <span>新建规则</span>
+                </template>
+              </el-menu-item>
+            </el-menu>
+          </el-scrollbar>
         </el-aside>
         <el-main class="main">
           <el-scrollbar>
@@ -97,7 +101,7 @@
               <template #header>
                 <el-text>操作</el-text>
               </template>
-              <div style="height: 20px;"></div>
+              <div style="height: 20px"></div>
             </el-card>
             <div class="btns">
               <el-button type="primary" @click="saveRuleBtn" class="btn"
