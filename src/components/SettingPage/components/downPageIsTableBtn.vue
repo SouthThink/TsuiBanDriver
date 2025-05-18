@@ -8,18 +8,27 @@
 <script setup>
 import { ref } from "vue";
 import { translate } from "@/utils/translate";
+import { isMobile } from "@/utils/utils";
 
 const downPageIsTable = ref();
-
-if (localStorage.getItem("downPageType") === null) {
-  localStorage.setItem("downPageType", "table");
-}
-
-downPageIsTable.value = localStorage.getItem("downPageType") || "table";
 
 const changeDownPageIsTable = (val) => {
   localStorage.setItem("downPageType", val);
 };
+
+// console.log(isMobile.value);
+
+if (localStorage.getItem("downPageType") === null) {
+  if(isMobile.value){
+    changeDownPageIsTable("card");
+  } else {
+    changeDownPageIsTable("table");
+  }
+}
+
+downPageIsTable.value = localStorage.getItem("downPageType");
+
+
 </script>
 
 <style></style>

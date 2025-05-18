@@ -267,3 +267,33 @@ export function allVersion(params) {
     params,
   });
 }
+
+export function aiSubtitle(params) {
+  return request(BASE_URL,{
+    url: "/aiSubtitle",
+    method: "get",
+    params,
+  });
+
+}export function aiConfig(params) {
+  return request(BASE_URL,{
+    url: "/aiConfig",
+    method: "get",
+    params,
+  });
+}
+export function addEditAiConfig(data) {
+  return request(BASE_URL,{
+      method: "post",
+      url:"/addEditAiConfig",
+      data,
+  });
+}
+
+export function deleteAiConfig(data) {
+  return request(BASE_URL,{
+      method: "post",
+      url:"/deleteAiConfig",
+      data,
+  });
+}

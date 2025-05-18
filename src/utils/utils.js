@@ -66,6 +66,7 @@ const stateText = (state) => {
     checkingDL: "检查",
     downloading: "下载",
     finished: "完成",
+    moving: "移动",
   };
   return stateType[state];
 };
@@ -82,33 +83,45 @@ const stateColor = (state) => {
   return stateType[state];
 };
 
+// 定义一个函数，用于合并两个对象
 const mergeObjects = (obj1, obj2) => {
+  // 创建一个空对象，用于存放合并后的结果
   let result = {};
 
+  // 遍历第一个对象的属性
   for (let key in obj1) {
+    // 如果第二个对象也有相同的属性
     if (obj2.hasOwnProperty(key)) {
+      // 如果两个属性都是对象，则递归调用mergeObjects函数，将两个对象合并
       if (typeof obj1[key] === "object" && typeof obj2[key] === "object") {
         result[key] = mergeObjects(obj1[key], obj2[key]);
       } else {
+        // 如果两个属性不是对象，则将第二个对象的属性值赋给结果对象
         result[key] = obj2[key];
       }
     } else {
+      // 如果第二个对象没有相同的属性，则将第一个对象的属性值赋给结果对象
       result[key] = obj1[key];
     }
   }
 
+  // 遍历第二个对象的属性
   for (let key in obj2) {
+    // 如果第一个对象没有相同的属性，则将第二个对象的属性值赋给结果对象
     if (!obj1.hasOwnProperty(key)) {
       result[key] = obj2[key];
     }
   }
 
+  // 返回合并后的结果对象
   return result;
 };
 
 import { addTorrents } from "@/api/yzrServer";
 
+// 定义一个函数，用于创建下载任务
 const createDownload = (url, name) => {
+  // 打印下载链接和下载名称
   console.log("下载", url);
   console.log("下载", name);
   // 弹出弹窗，中间是输入框，标题是请输入订阅链接
@@ -117,12 +130,15 @@ const createDownload = (url, name) => {
     cancelButtonText: "取消",
   })
     .then(({ value }) => {
+      // 弹出通知，提示正在添加下载任务
       ElNotification({
         title: "正在添加下载任务",
         message: name,
         type: "info",
       });
+      // 调用addTorrents函数，传入下载链接和保存地址，并返回结果
       addTorrents({ urls: url, savepath: value }).then((res) => {
+        // 如果返回结果的状态码为200，则弹出通知，提示添加成功
         if (res.code === 200) {
           ElNotification({
             title: "添加成功",
@@ -130,6 +146,7 @@ const createDownload = (url, name) => {
             type: "success",
           });
         } else {
+          // 否则弹出通知，提示添加失败
           ElNotification({
             title: "添加失败",
             message: "添加失败",
@@ -139,12 +156,16 @@ const createDownload = (url, name) => {
       });
     })
     .catch(() => {
+      // 如果用户取消添加，则打印取消添加
       console.log("取消添加");
     });
 };
 
+// 深度比较两个对象是否相等
 const deepEqual = (a, b) => {
+  // 如果两个对象相等，则返回true
   if (a === b) return true;
+  // 如果两个对象中有一个不是对象，或者两个对象都是null，则返回false
   if (
     typeof a !== "object" ||
     a === null ||
@@ -152,12 +173,17 @@ const deepEqual = (a, b) => {
     b === null
   )
     return false;
+  // 获取两个对象的键
   let keysA = Object.keys(a),
     keysB = Object.keys(b);
+  // 如果两个对象的键的数量不相等，则返回false
   if (keysA.length !== keysB.length) return false;
+  // 遍历第一个对象的键
   for (let key of keysA) {
+    // 如果第二个对象不包含该键，或者该键对应的值不相等，则返回false
     if (!keysB.includes(key) || !deepEqual(a[key], b[key])) return false;
   }
+  // 如果所有键都相等，则返回true
   return true;
 };
 
@@ -184,4 +210,6 @@ export {
   deepEqual,
   stateColor,
   setSize,
+  isMobile,
+  screenWidth,
 };

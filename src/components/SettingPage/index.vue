@@ -25,6 +25,12 @@
     </el-card>
     <el-card class="setting-card">
       <template #header>
+        <el-text size="large">{{translate("AI设置")}}</el-text>
+      </template>
+      <ai-setting />
+    </el-card>
+    <el-card class="setting-card">
+      <template #header>
         <el-text size="large">{{translate("弹幕设置")}}</el-text>
       </template>
       <danmaku-setting />
@@ -47,6 +53,7 @@ import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
 import about from "./components/about.vue";
+import aiSetting from "./components/aiSetting.vue";
 import { translate } from '@/utils/translate'
 </script>
 <style scoped>

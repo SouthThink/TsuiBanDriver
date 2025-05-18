@@ -232,7 +232,7 @@ const getRuleListFun = () => {
       ruleAllInfo.value = res1.data;
       ruleKeyList.value = res.data.rule_list;
       rule.value = res.data.used_rule.name;
-      // console.log(res, "搜索规则列表");
+      console.log(res, "搜索规则列表");
     });
   });
 };

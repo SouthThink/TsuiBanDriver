@@ -29,7 +29,7 @@
         <div class="bangumi-card">
           <el-skeleton-item class="bangumi-card-title" variant="h3" />
           <el-row :gutter="24">
-            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="(item, index) in 6" 
+            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n" 
             style="padding-left: 5px;padding-right: 5px;">
               <div class="bangumi-item">
                 <el-skeleton-item

@@ -11,7 +11,7 @@
       />
     </div>
     <div class="bangumiList">
-      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle" />
+      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle" @closePage="closePage"/>
     </div>
   </div>
 </template>
@@ -61,6 +61,11 @@ export default {
       this.title = title;
       //设置页面标题
       document.title = title;
+    },
+    closePage() {
+      //关闭当前页面
+      console.log("关闭当前页面");
+      window.close();
     },
   },
 };

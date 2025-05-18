@@ -215,7 +215,7 @@ export default {
     },
     subtitleChange(item) {
       console.log("字幕", item.switch);
-      item.tooltip = item.switch ? this.this.translate("隐藏") : this.translate("显示");
+      item.tooltip = item.switch ? this.translate("隐藏") : this.translate("显示");
       this.instance.subtitle.show = !item.switch;
       return !item.switch;
     },
