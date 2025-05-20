@@ -78,7 +78,6 @@
                 v-model="ruleForm.rss_suffix"
                 :placeholder="translate('请输入RSS后缀(可选)')"
                 prop="rss_suffix"
-                :disabled="!isEdit"
               >
               </el-input>
             </el-form-item>

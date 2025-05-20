@@ -1,5 +1,5 @@
 <template>
-  <div ref="artRef"></div>
+  <div ref="artRef" class="player"></div>
 </template>
 
 <script>
@@ -132,6 +132,8 @@ export default {
           backdrop: true,
           // 是否内联播放
           playsInline: true,
+          // 是否启用移动端手势
+          gesture: true,
           // 是否自动播放
           autoPlayback: true,
           // 是否AirPlay
@@ -225,3 +227,8 @@ export default {
   },
 };
 </script>
+<style scoped>
+.player:deep(.art-state) {
+  opacity: 0 !important;
+}
+</style>
