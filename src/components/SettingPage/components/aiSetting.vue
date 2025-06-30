@@ -54,10 +54,10 @@ const getModuelList = async () => {
     moduelList.value = res.valid_models;
     device.value = res.default_device;
     deviceList.value = res.valid_devices;
-    console.log(res, "获取默认模型"); // 获取默认模型
+    // console.log(res, "获取默认模型"); // 获取默认模型
   });
 };
-console.log(moduelList.value, "获取模型列表");
+// console.log(moduelList.value, "获取模型列表");
 getModuelList();
 const changeAiConfig = (key) => {
     
@@ -65,7 +65,7 @@ const changeAiConfig = (key) => {
     ai_config_key: key,
     ai_config_value: key == "default_model" ? moduel.value : device.value,
   }).then((res) => {
-    console.log(res, "修改默认模型");
+    // console.log(res, "修改默认模型");
   });
 };
 </script>

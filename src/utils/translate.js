@@ -21,6 +21,9 @@ if (localStorage.getItem('lang')) {
 // 获取翻译
 export function translate(key) {
   const translations = languages[currentLang];
+  if (!translations) {
+    console.warn(`未找到翻译键 "${currentLang}".`);
+  }
   return translations[key] || key;
 }
 

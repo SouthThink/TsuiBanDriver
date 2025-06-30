@@ -37,6 +37,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/yzr/, ""),
       },
     },
+    port: 3000,
   },
   resolve: {
     alias: {

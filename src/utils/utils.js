@@ -67,6 +67,7 @@ const stateText = (state) => {
     downloading: "下载",
     finished: "完成",
     moving: "移动",
+    uploading: "上传",
   };
   return stateType[state];
 };
@@ -79,6 +80,8 @@ const stateColor = (state) => {
     checkingDL: "warning",
     downloading: "success",
     finished: "success",
+    moving: "info",
+    uploading: "warning",
   };
   return stateType[state];
 };

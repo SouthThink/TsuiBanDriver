@@ -68,10 +68,10 @@
             />
           </template>
         </el-table-column>
-        <el-table-column :label="translate('状态')" width="70">
+        <el-table-column :label="translate('状态')" width="100">
           <template #default="scope">
             <el-tag :type="stateColor(scope.row.state)">
-              {{ stateText(scope.row.state) }}
+              {{ translate(stateText(scope.row.state)) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -88,6 +88,11 @@
         <el-table-column prop="dlspeed" :label="translate('速度')" width="80">
           <template #default="scope">
             {{ formatSpeed(scope.row.dlspeed) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="upspeed" :label="translate('上传')" width="80">
+          <template #default="scope">
+            {{ formatSpeed(scope.row.upspeed) }}
           </template>
         </el-table-column>
         <el-table-column prop="eta" :label="translate('剩余')" sortable width="100">
@@ -173,17 +178,20 @@
                   </el-descriptions-item>
                   <el-descriptions-item :label="translate('状态')" :span="2">
                     <el-tag :type="stateColor(torrent.state)">
-                      {{ stateText(torrent.state) }}
+                      {{ translate(stateText(torrent.state)) }}
                     </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('已下载')" :span="2">
+                  <el-descriptions-item :label="translate('已下载')" :span="1">
                     {{ fileSize(torrent.downloaded) }}
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('剩余')" :span="2">
+                  <el-descriptions-item :label="translate('剩余')" :span="1">
                     {{ formatTime(torrent.eta) }}
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('速度')" :span="2">
+                  <el-descriptions-item :label="translate('下载')" :span="2">
                     {{ formatSpeed(torrent.dlspeed) }}
+                  </el-descriptions-item>
+                   <el-descriptions-item :label="translate('上传')" :span="2">
+                    {{ formatSpeed(torrent.upspeed) }}
                   </el-descriptions-item>
                   <el-descriptions-item :label="translate('下载进度')" :span="6">
                     <el-progress
