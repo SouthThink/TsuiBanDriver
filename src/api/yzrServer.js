@@ -297,3 +297,19 @@ export function deleteAiConfig(data) {
       data,
   });
 }
+
+export function getSubtitleList(params) {
+  return request(BASE_URL,{
+    url: "/getSubtitleList",
+    method: "get",
+    params,
+  });
+}
+
+export function setSubtitle(params) {
+  return request(BASE_URL,{
+    url: "/setSubtitle",
+    method: "get",
+    params,
+  });
+}
