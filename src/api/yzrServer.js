@@ -337,3 +337,33 @@ export function testProxy(data) {
     data,
   });
 }
+
+export function getUrlConfig() {
+  return request(BASE_URL,{
+    method: "get",
+    url:"/getUrlConfig",
+  });
+}
+
+export function saveUrlConfig(data) {
+  return request(BASE_URL,{
+    method: "post",
+    url:"/saveUrlConfig",
+    data,
+  });
+}
+
+export function getBackendVersions(params) {
+  return request(BASE_URL,{
+    url: "/getBackendVersions",
+    method: "get",
+    params,
+  });
+}
+export function testBackendConnection(data) {
+  return request(BASE_URL,{
+    url: "/testBackendConnection",
+    method: "post",
+    data,
+  });
+}

@@ -37,6 +37,12 @@
     </el-card>
     <el-card class="setting-card">
       <template #header>
+        <el-text size="large">{{translate("后端设置")}}</el-text>
+      </template>
+      <backend-setting />
+    </el-card>
+    <el-card class="setting-card">
+      <template #header>
         <el-text size="large">{{translate("关于")}}</el-text>
       </template>
       <about/>
@@ -52,6 +58,7 @@ import language from "./components/language.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
+import backendSetting from "./components/backendSetting.vue";
 import about from "./components/about.vue";
 import aiSetting from "./components/aiSetting.vue";
 import { translate } from '@/utils/translate'
