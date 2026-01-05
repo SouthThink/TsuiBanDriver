@@ -10,16 +10,17 @@
         v-for="(item, index) in bangumiList"
         :key="index"
         :name="index"
-        :title="
-          item.EpisodeTitle +
-          ' ' +
-          formatReadTime(item.AirDate) +
-          ' ' +
-          (item.AirStatus == '1' ? '已观看' : '未观看')
-        "
         class="bangumi-collapse-item"
         disabled
       >
+        <template #title>
+          <span
+            class="bangumi-title-text"
+            :class="{ 'unwatched-title': item.AirStatus != '1' }"
+          >
+            {{ item.EpisodeTitle }} {{ formatReadTime(item.AirDate) }} {{ item.AirStatus == '1' ? '已观看' : '未观看' }}
+          </span>
+        </template>
         <div class="bangumi-collapse-item-button">
           <div
             class="bangumi-collapse-item-button-team"
@@ -130,6 +131,10 @@ export default {
               this.activeNames.push(index);
             }
           });
+          // 确保在 DOM 更新后设置未观看标题颜色（覆盖可能的样式冲突）
+          this.$nextTick(() => {
+            this.updateUnwatchedColors();
+          });
         })
         .catch((err) => {
           ElNotification({
@@ -183,6 +188,20 @@ export default {
           });
         });
     },
+    updateUnwatchedColors() {
+      try {
+        const isDark = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const els = this.$el.querySelectorAll('.unwatched-title');
+        els.forEach((el) => {
+          const color = isDark ? '#ffffff' : '#000000';
+          // 使用 setProperty 的 priority 参数设置为 'important'，覆盖其它样式
+          el.style.setProperty('color', color, 'important');
+        });
+      } catch (err) {
+        // 忽略在服务端渲染或没有 DOM 时的错误
+        // console.warn('updateUnwatchedColors error', err);
+      }
+    },
   },
 };
 </script>
@@ -208,5 +227,33 @@ export default {
 }
 .bangumi-collapse-item-button:deep(.el-button) {
   margin: 0;
+}
+
+.bangumi-title-text {
+  display: inline-block;
+  max-width: calc(100% - 40px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 未观看：默认浅色模式为纯黑，暗色模式（项目使用 html.dark）为纯白 */
+.bangumi-collapse .unwatched-title,
+.unwatched-title {
+  color: #000 !important;
+}
+
+/* 如果项目使用 html.dark 切换暗色主题，则在该类下显示白色 */
+html.dark .bangumi-collapse .unwatched-title,
+html.dark .unwatched-title {
+  color: #fff !important;
+}
+
+/* 保留对 prefers-color-scheme 的兼容性（系统主题优先） */
+@media (prefers-color-scheme: dark) {
+  .bangumi-collapse .unwatched-title,
+  .unwatched-title {
+    color: #fff !important;
+  }
 }
 </style>
