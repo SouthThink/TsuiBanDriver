@@ -21,6 +21,89 @@
     <el-text>{{translate("搜索规则列表")}}</el-text>
     <el-button type="default" @click="handleClick">{{translate("查看")}}</el-button>
   </div>
+  <div class="setting-item">
+    <el-text>{{translate("搜索头")}}</el-text>
+    <el-button type="default" @click="openSearchHeaderDialog">{{translate("编辑")}}</el-button>
+  </div>
+  <el-dialog
+    v-model="searchHeaderDialog"
+    :title="translate('搜索头')"
+    width="70%"
+    destroy-on-close
+  >
+    <el-input
+      v-model="searchHeader"
+      :placeholder="translate('请输入搜索头')"
+      type="textarea"
+      :rows="10"
+    />
+    <template #footer>
+      <el-button @click="searchHeaderDialog = false">{{translate("取消")}}</el-button>
+      <el-button type="primary" @click="saveSearchConfig({ closeDialog: true })">{{translate("保存")}}</el-button>
+    </template>
+  </el-dialog>
+  <div class="setting-item">
+    <el-text>{{translate("网络代理")}}</el-text>
+    <el-switch v-model="proxyEnabled" @change="saveSearchConfig" />
+  </div>
+  <template v-if="proxyEnabled">
+    <div class="setting-item">
+      <el-text>{{translate("代理协议")}}</el-text>
+      <el-select
+        v-model="proxyProtocol"
+        :placeholder="translate('请选择代理协议')"
+        style="max-width: 60%; width: 240px"
+        @change="saveSearchConfig"
+      >
+        <el-option label="HTTP" value="http" />
+        <el-option label="SOCKS5" value="socks5" />
+      </el-select>
+    </div>
+    <div class="setting-item">
+      <el-text>{{translate("代理服务器")}}</el-text>
+      <el-input
+        v-model="proxyHost"
+        :placeholder="translate('请输入代理服务器地址')"
+        style="max-width: 60%; width: 240px"
+        @change="saveSearchConfig"
+      />
+    </div>
+    <div class="setting-item">
+      <el-text>{{translate("代理端口")}}</el-text>
+      <el-input
+        v-model="proxyPort"
+        :placeholder="translate('请输入代理端口')"
+        style="max-width: 60%; width: 240px"
+        type="number"
+        @change="saveSearchConfig"
+      />
+    </div>
+    <div class="setting-item">
+      <el-text>{{translate("测试代理")}}</el-text>
+      <el-button 
+        type="default" 
+        @click="testProxyConnection"
+        :loading="proxyTesting"
+      >
+        {{translate("测试")}}
+      </el-button>
+    </div>
+    <div v-if="proxyTestResult" class="proxy-test-result">
+      <el-alert
+        :title="proxyTestResult.success ? translate('测试成功') : translate('测试失败')"
+        :type="proxyTestResult.success ? 'success' : 'error'"
+        :closable="true"
+        @close="proxyTestResult = null"
+      >
+        <template v-if="proxyTestResult.success">
+          {{translate("延迟")}} : {{proxyTestResult.latency}}ms
+        </template>
+        <template v-else>
+          {{proxyTestResult.error}}
+        </template>
+      </el-alert>
+    </div>
+  </template>
   <el-dialog
     v-model="dialogVisible"
     width="70%"
@@ -174,13 +257,16 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import {
   addEditRule,
   getRuleInfoList,
   getRuleList,
   deleteRule,
   matchRule,
+  getSearchConfig,
+  saveSearchConfigApi,
+  testProxy,
 } from "@/api/yzrServer.js";
 import { translate } from '@/utils/translate'
 const rule = ref("");
@@ -200,6 +286,125 @@ const ruleForm = ref({
 });
 const scrollbar = ref(null);
 const scrollbarContent = ref(null);
+const searchHeaderDialog = ref(false);
+
+// 搜索配置相关
+const searchHeader = ref("");
+const proxyEnabled = ref(false);
+const proxyProtocol = ref("http");
+const proxyHost = ref("");
+const proxyPort = ref("");
+const proxyTesting = ref(false);
+const proxyTestResult = ref(null);
+
+const openSearchHeaderDialog = () => {
+  searchHeaderDialog.value = true;
+};
+
+// 获取搜索配置
+const loadSearchConfig = () => {
+  getSearchConfig({}).then((res) => {
+    if (res.code === 200 && res.data) {
+      searchHeader.value = res.data.search_header || "";
+      proxyEnabled.value = res.data.proxy_enabled || false;
+      proxyProtocol.value = res.data.proxy_protocol || "http";
+      proxyHost.value = res.data.proxy_host || "";
+      proxyPort.value = res.data.proxy_port || "";
+    }
+  });
+};
+
+// 保存搜索配置
+const saveSearchConfig = (optionsOrEvent = {}) => {
+  const options = typeof optionsOrEvent === "object" ? optionsOrEvent : {};
+  saveSearchConfigApi({
+    search_header: searchHeader.value,
+    proxy_enabled: proxyEnabled.value,
+    proxy_protocol: proxyProtocol.value,
+    proxy_host: proxyHost.value,
+    proxy_port: proxyPort.value,
+  }).then((res) => {
+    if (res.code === 200) {
+      ElMessage({
+        message: translate("保存成功"),
+        type: "success",
+      });
+      if (options.closeDialog) {
+        searchHeaderDialog.value = false;
+      }
+    } else {
+      ElMessage({
+        message: res.msg || translate("保存失败"),
+        type: "error",
+      });
+    }
+  });
+};
+
+// 测试代理连接
+const testProxyConnection = () => {
+  if (!proxyHost.value || !proxyPort.value) {
+    ElMessage({
+      message: translate("请输入代理服务器和端口"),
+      type: "warning",
+    });
+    return;
+  }
+
+  proxyTesting.value = true;
+  proxyTestResult.value = null;
+
+  testProxy({
+    proxy_protocol: proxyProtocol.value,
+    proxy_host: proxyHost.value,
+    proxy_port: proxyPort.value,
+  }).then((res) => {
+    proxyTesting.value = false;
+    
+    if (res.code === 200 && res.data && res.data.success) {
+      proxyTestResult.value = {
+        success: true,
+        latency: res.data.latency,
+      };
+      ElMessage({
+        message: `${translate("测试成功")} - ${res.data.latency}ms`,
+        type: "success",
+      });
+    } else if (res.data) {
+      proxyTestResult.value = {
+        success: false,
+        error: res.data.error || translate("测试失败"),
+      };
+      ElMessage({
+        message: proxyTestResult.value.error,
+        type: "error",
+      });
+    } else {
+      proxyTestResult.value = {
+        success: false,
+        error: res.msg || translate("测试失败"),
+      };
+      ElMessage({
+        message: translate("测试失败"),
+        type: "error",
+      });
+    }
+  }).catch((error) => {
+    proxyTesting.value = false;
+    proxyTestResult.value = {
+      success: false,
+      error: `${translate("网络错误")}: ${error.message}`,
+    };
+    ElMessage({
+      message: translate("网络错误"),
+      type: "error",
+    });
+  });
+};
+
+onMounted(() => {
+  loadSearchConfig();
+});
 
 //当屏幕宽度为768px以下时，dialog的宽度为100%
 const isMobile = ref(false);
@@ -338,6 +543,12 @@ const handleClick = () => {
   flex-direction: row;
   justify-content: space-between;
   gap: 16px;
+}
+
+.proxy-test-result {
+  margin-top: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 @media (max-width: 768px) {

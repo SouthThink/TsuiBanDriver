@@ -313,3 +313,27 @@ export function setSubtitle(params) {
     params,
   });
 }
+
+export function getSearchConfig(params) {
+  return request(BASE_URL,{
+    url: "/getSearchConfig",
+    method: "get",
+    params,
+  });
+}
+
+export function saveSearchConfigApi(data) {
+  return request(BASE_URL,{
+    method: "post",
+    url:"/saveSearchConfig",
+    data,
+  });
+}
+
+export function testProxy(data) {
+  return request(BASE_URL,{
+    method: "post",
+    url:"/testProxy",
+    data,
+  });
+}
