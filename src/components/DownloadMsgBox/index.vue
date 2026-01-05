@@ -13,7 +13,6 @@
             <el-menu
               default-active="0"
               @select="handleMenuSelect"
-              v-if="ruleNameList.length > 0"
             >
               <el-menu-item
                 v-for="(item, index) in ruleNameList"
@@ -230,14 +229,14 @@ const resetAll = () => {
 const getSubscribeList = () => {
   getRssItems({})
     .then((res) => {
-      if (res.code === 200) {
+      if (res.code === 200 && res.data && typeof res.data === 'object') {
         Object.keys(res.data).forEach((key) => {
           SubscribeList.value.push({ ...res.data[key], title: key });
         });
       } else {
         ElNotification({
           title: "订阅列表请求失败",
-          message: "请检查网络连接",
+          message: "返回数据为空或格式错误",
           type: "warning",
         });
       }
@@ -340,10 +339,19 @@ const handleMenuSelect = (index) => {
 
 const getRules = () => {
   getRssRules().then((res) => {
-    ruleNameList.value = Object.keys(res.data);
-    ruleInfo.value = res.data;
+    if (res && res.data && typeof res.data === 'object') {
+      ruleNameList.value = Object.keys(res.data);
+      ruleInfo.value = res.data;
+    } else {
+      ruleNameList.value = [];
+      ruleInfo.value = {};
+    }
     // console.log(ruleNameList.value);
     // console.log(res.data);
+  }).catch((err) => {
+    console.error('获取规则失败:', err);
+    ruleNameList.value = [];
+    ruleInfo.value = {};
   });
 };
 
@@ -404,7 +412,6 @@ const saveRuleBtn = () => {
     message: "请稍后",
     type: "info",
   });
-  ruleData.value.torrentParams.save_path = ruleData.value.savePath;
   setRule({
     ruleName: selectRuleName.value,
     ruleDef: ruleData.value,
