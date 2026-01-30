@@ -70,7 +70,7 @@
                   <el-switch v-model="ruleData.enabled" />
                 </el-form-item> -->
                 <el-form-item label="保存路径：">
-                  <el-input v-model="ruleData.savePath" />
+                  <el-input v-model="ruleData.torrentParams.save_path" />
                 </el-form-item>
               </el-form>
             </el-card>
@@ -171,6 +171,9 @@ const ruleData = ref({
   addPaused: false, // 暂停模式下添加匹配的种子
   assignedCategory: "", // 指定类别
   savePath: "", // 保存路径
+  torrentParams: {
+    save_path: "", // 保存路径
+  }, // 种子参数
 });
 const tableRef = ref(null);
 const SubscribeList = ref([]);
@@ -218,6 +221,7 @@ const resetAll = () => {
     addPaused: false, // 暂停模式下添加匹配的种子
     assignedCategory: "", // 指定类别
     savePath: "", // 保存路径
+    torrentParams: {}, // 种子参数
   };
   selectRssList.value = [];
   selectRuleName.value = "";
