@@ -173,6 +173,7 @@ const ruleData = ref({
   savePath: "", // 保存路径
   torrentParams: {
     save_path: "", // 保存路径
+    use_auto_tmm: false, // 是否使用自动命名规则
   }, // 种子参数
 });
 const tableRef = ref(null);
