@@ -66,7 +66,7 @@
             >
               <BangumiCardRow
                 @click="showDrawer(video)"
-                :imgUrl="'/api' + video.Cover"
+                :imgUrl="getImageUrl(video.Cover)"
                 :title="video.Title"
                 :rating="video.Rating"
                 :episodeWatched="video.EpisodeWatched"
@@ -90,7 +90,6 @@
 </template>
 
 <script>
-import { bangumi } from "@/api/dandanPlay";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
@@ -114,7 +113,7 @@ export default {
         { name: "分类排序", type: "category" },
         { name: "评分排序", type: "rating" },
       ],
-      nav: "season",
+      nav: "lastplay",
       showBangumi: false,
       bangumiTitle: "",
       AnimeId: "",
@@ -133,26 +132,27 @@ export default {
   computed: {},
   methods: {
     translate,
-    getVideoList(e) {
+    async getVideoList(e) {
       this.loading = true;
       this.videoList = {};
       this.tagList = [];
-      bangumi({params:e})
-        .then((res) => {
-          this.allVideoList = res;
-          this.bangumiSearch("");
-          this.loading = false;
-          // console.log(res, "番剧列表");
-        })
-        .catch((err) => {
-          ElNotification({
-            title: "获取番剧列表失败",
-            message: err,
-            type: "error",
-          });
-          console.error(err);
-          this.loading = false;
+      
+      try {
+        const res = await fetch(`/yzr/bangumi?params=${e}`);
+        const data = await res.json();
+        this.allVideoList = data;
+        this.bangumiSearch("");
+        this.loading = false;
+        // console.log(data, "番剧列表");
+      } catch (err) {
+        ElNotification({
+          title: "获取番剧列表失败",
+          message: err,
+          type: "error",
         });
+        console.error(err);
+        this.loading = false;
+      }
     },
     bangumiSearch(e) {
       this.videoList = {};
@@ -176,6 +176,19 @@ export default {
       this.showBangumi = true;
       this.AnimeId = e.AnimeId.toString();
       this.bangumiTitle = e.Title;
+    },
+    getImageUrl(cover) {
+      if (!cover) return '';
+      try {
+        const queryIndex = cover.indexOf('?');
+        if (queryIndex === -1) return cover;
+        const queryString = cover.substring(queryIndex + 1);
+        const params = new URLSearchParams(queryString);
+        const url = params.get('url');
+        return url ? decodeURIComponent(url) : cover;
+      } catch {
+        return cover;
+      }
     },
   },
 };

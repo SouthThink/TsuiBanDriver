@@ -57,20 +57,26 @@ export default {
     },
     
     getDanmukuConfig(videoId) {
+      const baseConfig = {
+        danmuku: `/yzr/comment?videoId=${videoId}`,
+        heatmap: true,
+        emitter: true,
+        speed: 15,
+        maxLength: 50,
+        antiOverlap: true,
+        synchronousPlayback: false,
+      };
+      
       if (this.isMobile) {
-        return {
-          danmuku: `/api/api/v1/comment/id/${videoId}`,
-          heatmap: false,
-          emitter: false,
-          speed: 15,
-          maxLength: 50,
-          antiOverlap: true,
-          synchronousPlayback: false,
-        };
+        baseConfig.heatmap = false;
+        baseConfig.emitter = false;
+        return baseConfig;
       } else {
+        const savedConfig = JSON.parse(localStorage.getItem("danmuku") || "{}");
         return {
-          ...JSON.parse(localStorage.getItem("danmuku") || "{}"),
-          danmuku: `/api/api/v1/comment/id/${videoId}`,
+          ...baseConfig,
+          ...savedConfig,
+          danmuku: `/yzr/comment?videoId=${videoId}`,
         };
       }
     },
@@ -86,18 +92,20 @@ export default {
       this.currentVideoId = this.videoId;
       
       this.$nextTick(() => {
-        this.createPlayer();
+        this.getVideoUrls(this.videoId).then(urls => {
+          this.createPlayer(urls);
+        });
       });
     },
     
-    createPlayer() {
+    createPlayer(urls) {
       const that = this;
       const danmukuConfig = this.getDanmukuConfig(this.videoId);
       
       try {
         this.instance = new Artplayer({
-          url: `/api/api/v1/stream/id/${this.videoId}`,
-          poster: `/api/api/v1/image/id/${this.videoId}`,
+          url: urls.streamUrl,
+          poster: urls.posterUrl,
           subtitle: {
             url: `/yzr/getSubtitle?videoId=${this.videoId}`,
             type: "ass",
@@ -182,7 +190,9 @@ export default {
         console.log("播放器实例不存在，创建新实例");
         this.currentVideoId = newVideoId;
         this.$nextTick(() => {
-          this.createPlayer();
+          this.getVideoUrls(newVideoId).then(urls => {
+            this.createPlayer(urls);
+          });
         });
         return;
       }
@@ -190,36 +200,36 @@ export default {
       console.log("切换视频:", this.currentVideoId, "->", newVideoId);
       this.currentVideoId = newVideoId;
       
-      const newUrl = `/api/api/v1/stream/id/${newVideoId}`;
-      const newPoster = `/api/api/v1/image/id/${newVideoId}`;
-      const newSubtitle = `/yzr/getSubtitle?videoId=${newVideoId}`;
-      const newDanmuku = `/api/api/v1/comment/id/${newVideoId}`;
-      
-      try {
-        this.instance.url = newUrl;
-        this.instance.poster = newPoster;
+      this.getVideoUrls(newVideoId).then(urls => {
+        const newSubtitle = `/yzr/getSubtitle?videoId=${newVideoId}`;
+        const newDanmuku = `/yzr/comment?videoId=${newVideoId}`;
         
-        if (this.instance.subtitle) {
-          this.instance.subtitle.url = newSubtitle;
-        }
-        
-        if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
-          const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
-          if (danmukuPlugin.danmuku) {
-            danmukuPlugin.danmuku = newDanmuku;
+        try {
+          this.instance.url = urls.streamUrl;
+          this.instance.poster = urls.posterUrl;
+          
+          if (this.instance.subtitle) {
+            this.instance.subtitle.url = newSubtitle;
           }
+          
+          if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
+            const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
+            if (danmukuPlugin.danmuku) {
+              danmukuPlugin.danmuku = newDanmuku;
+            }
+          }
+          
+          console.log("视频切换成功");
+          
+        } catch (error) {
+          console.error("切换视频失败:", error);
+          console.log("重新创建播放器");
+          this.destroyPlayer();
+          this.$nextTick(() => {
+            this.createPlayer(urls);
+          });
         }
-        
-        console.log("视频切换成功");
-        
-      } catch (error) {
-        console.error("切换视频失败:", error);
-        console.log("重新创建播放器");
-        this.destroyPlayer();
-        this.$nextTick(() => {
-          this.createPlayer();
-        });
-      }
+      });
     },
     
     subtitleChange(item) {
@@ -253,6 +263,34 @@ export default {
       
       if (this.$refs.artRef) {
         this.$refs.artRef.innerHTML = '';
+      }
+    },
+    
+    async getVideoUrls(videoId) {
+      try {
+        const streamRes = await fetch(`/yzr/stream?videoId=${videoId}`);
+        
+        console.log('[getVideoUrls] Stream响应状态:', streamRes.status);
+        
+        if (!streamRes.ok) {
+          console.error('[getVideoUrls] 获取视频流失败:', streamRes.status);
+          throw new Error(`获取视频流失败: ${streamRes.status}`);
+        }
+        
+        const streamData = await streamRes.json();
+        console.log('[getVideoUrls] Stream URL:', streamData.url);
+        
+        return {
+          streamUrl: streamData.url,
+          posterUrl: `/api/api/v1/image/id/${videoId}`
+        };
+      } catch (error) {
+        console.error('获取视频URL失败:', error);
+        ElMessage.error('获取视频信息失败: ' + error.message);
+        return {
+          streamUrl: '',
+          posterUrl: ''
+        };
       }
     },
   },

@@ -44,7 +44,6 @@
   </div>
 </template>
 <script>
-import { bangumiList } from "@/api/dandanPlay";
 import { aiSubtitle } from "@/api/yzrServer";
 export default {
   data() {
@@ -114,32 +113,33 @@ export default {
         });
       }
     },
-    showBangumiList(e) {
+    async showBangumiList(e) {
       this.bangumiList = [];
       this.activeNames = [];
       this.bangumiTitle = e.Title;
-      bangumiList({ params: e })
-        .then((res) => {
-          console.log("返回的集数", res);
-          this.bangumiList = res.Episodes;
-          // console.log(this.bangumiList);
-          this.bangumiList.forEach((element, index) => {
-            if (element.LocalMatchedFiles.length !== 0) {
-              this.activeNames.push(index);
-            }
-          });
-          // 确保在 DOM 更新后设置未观看标题颜色（覆盖可能的样式冲突）
-          this.$nextTick(() => {
-            this.updateUnwatchedColors();
-          });
-        })
-        .catch((err) => {
-          ElNotification({
-            title: "获取番剧集数失败",
-            message: err,
-            type: "error",
-          });
+      
+      try {
+        const res = await fetch(`/yzr/bangumiList?params=${e}`);
+        const data = await res.json();
+        console.log("返回的集数", data);
+        this.bangumiList = data.Episodes;
+        // console.log(this.bangumiList);
+        this.bangumiList.forEach((element, index) => {
+          if (element.LocalMatchedFiles.length !== 0) {
+            this.activeNames.push(index);
+          }
         });
+        // 确保在 DOM 更新后设置未观看标题颜色（覆盖可能的样式冲突）
+        this.$nextTick(() => {
+          this.updateUnwatchedColors();
+        });
+      } catch (err) {
+        ElNotification({
+          title: "获取番剧集数失败",
+          message: err,
+          type: "error",
+        });
+      }
     },
     isSelected(e) {
       if (e.Id == this.Id) {
