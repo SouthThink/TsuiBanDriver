@@ -1,13 +1,38 @@
 <template>
   <div class="download-page">
     <div class="download-table" v-if="tOrC == 'table'">
+      <div class="batch-actions">
+        <el-input
+          v-model="searchQuery"
+          :placeholder="translate('搜索文件名或路径')"
+          clearable
+          class="search-input"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <div class="batch-actions-right" v-if="selectedTorrents.length > 0">
+          <el-button type="danger" class="batch-action-btn" @click="batchDelete">
+            {{translate('批量删除')}} ({{ selectedTorrents.length }})
+          </el-button>
+          <el-button type="primary" class="batch-action-btn" @click="batchSetLocation">
+            {{translate('批量移动')}} ({{ selectedTorrents.length }})
+          </el-button>
+          <el-button class="batch-action-btn" @click="clearSelection">{{translate('取消选择')}}</el-button>
+        </div>
+      </div>
       <el-table
-        :data="torrents"
+        ref="tableRef"
+        :data="filteredTorrents"
         style="width: 100%"
         v-loading="torrents.length === 0 && loading"
-        :empty-text="translate('暂无下载任务')"
+        :empty-text="searchQuery ? translate('无搜索结果') : translate('暂无下载任务')"
         allow-drag-last-column
+        :row-class-name="getRowClassName"
+        @selection-change="handleSelectionChange"
       >
+        <el-table-column type="selection" width="55" />
         <el-table-column
           fixed
           prop="name"
@@ -118,6 +143,27 @@
       v-else
       v-loading="torrents.length === 0 && loading"
     >
+      <div class="batch-actions">
+        <el-input
+          v-model="searchQuery"
+          :placeholder="translate('搜索文件名或路径')"
+          clearable
+          class="search-input"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <div class="batch-actions-right" v-if="selectedTorrents.length > 0">
+          <el-button type="danger" class="batch-action-btn" @click="batchDelete">
+            {{translate('批量删除')}} ({{ selectedTorrents.length }})
+          </el-button>
+          <el-button type="primary" class="batch-action-btn" @click="batchSetLocation">
+            {{translate('批量移动')}} ({{ selectedTorrents.length }})
+          </el-button>
+          <el-button class="batch-action-btn" @click="clearSelection">{{translate('取消选择')}}</el-button>
+        </div>
+      </div>
       <div class="sorting-item-container">
         <el-radio-group
           v-model="sortingType"
@@ -156,11 +202,12 @@
           :sm="12"
           :md="8"
           :lg="6"
-          v-for="torrent in torrents"
+          v-for="torrent in filteredTorrents"
           :key="torrent.id"
         >
-          <el-card class="box-card">
+          <el-card class="box-card" :class="{ 'is-selected': isTorrentSelected(torrent) }">
             <template #header>
+              <el-checkbox v-model="torrent.isSelected" @change="handleCardSelection(torrent)" style="margin-right: 10px;"></el-checkbox>
               <el-text line-clamp="1" truncated style="width: 80%;">{{ torrent.name }}</el-text>
               <el-text line-clamp="1" >{{ fileSize(torrent.size) }}</el-text>
             </template>
@@ -233,13 +280,14 @@
           </el-card>
         </el-col>
       </el-row>
+      <el-empty v-if="filteredTorrents.length === 0 && torrents.length > 0 && searchQuery" :description="translate('无搜索结果')" />
     </div>
   </div>
 </template>
 <script setup>
 import { getDownloadList, deleteTorrents, setLocation } from "@/api/yzrServer";
-import { ref, onMounted, onUnmounted } from "vue";
-import { Delete, Edit } from "@element-plus/icons-vue";
+import { ref, onMounted, onUnmounted, nextTick, computed } from "vue";
+import { Delete, Edit, Search } from "@element-plus/icons-vue";
 import {
   fileSize,
   formatDate,
@@ -252,6 +300,19 @@ import {
 import { translate } from '@/utils/translate'
 
 const torrents = ref([]);
+const tableRef = ref(null);
+const selectedTorrents = ref([]);
+const searchQuery = ref("");
+const filteredTorrents = computed(() => {
+  if (!searchQuery.value) {
+    return torrents.value;
+  }
+  const query = searchQuery.value.toLowerCase();
+  return torrents.value.filter(torrent => 
+    torrent.name.toLowerCase().includes(query) || 
+    torrent.save_path.toLowerCase().includes(query)
+  );
+});
 const timer = ref(null);
 const rid = ref(0);
 const rid2 = ref(null);
@@ -273,6 +334,128 @@ const sortingWayList = [
 ];
 var resData = {};
 
+const handleSelectionChange = (selection) => {
+  selectedTorrents.value = selection;
+};
+
+const handleCardSelection = (torrent) => {
+  if (torrent.isSelected) {
+    if (!selectedTorrents.value.find(t => t.infohash_v1 === torrent.infohash_v1)) {
+      selectedTorrents.value.push(torrent);
+    }
+  } else {
+    selectedTorrents.value = selectedTorrents.value.filter(t => t.infohash_v1 !== torrent.infohash_v1);
+  }
+};
+
+const isTorrentSelected = (torrent) => {
+  return selectedTorrents.value.some(t => t.infohash_v1 === torrent.infohash_v1);
+};
+
+const clearSelection = () => {
+  torrents.value.forEach(torrent => {
+    torrent.isSelected = false;
+  });
+  selectedTorrents.value = [];
+};
+
+const getRowClassName = ({ row }) => {
+  if (isTorrentSelected(row)) {
+    return 'selected-row';
+  }
+  return '';
+};
+
+const batchDelete = () => {
+  if (selectedTorrents.value.length === 0) return;
+  
+  ElMessageBox.confirm(
+    `${translate("是否删除选中的")}${selectedTorrents.value.length}${translate("个种子和文件？")}`,
+    translate("提示"),
+    {
+      confirmButtonText: translate("确定"),
+      cancelButtonText: translate("取消"),
+      type: "warning",
+    }
+  ).then(() => {
+    const hashes = selectedTorrents.value.map(t => t.infohash_v1).join('|');
+    deleteTorrents({ hashes, deleteFiles: true })
+      .then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: translate("成功"),
+            message: translate("批量删除成功"),
+            type: "success",
+          });
+          clearSelection();
+          rid.value = 0;
+        } else {
+          ElNotification({
+            title: translate("失败"),
+            message: res.msg,
+            type: "error",
+          });
+        }
+      })
+      .catch((err) => {
+        ElNotification({
+          title: translate("失败"),
+          message: err,
+          type: "error",
+        });
+      });
+  }).catch(() => {});
+};
+
+const batchSetLocation = () => {
+  if (selectedTorrents.value.length === 0) return;
+  
+  const hashes = selectedTorrents.value.map(t => t.infohash_v1).join('|');
+  const defaultLocation = selectedTorrents.value[0].save_path;
+  
+  ElMessageBox.prompt(
+    translate("批量移动位置"),
+    {
+      confirmButtonText: translate("确定"),
+      cancelButtonText: translate("取消"),
+      inputPattern: /\S/,
+      inputErrorMessage: translate("地址路径不能为空"),
+      inputValue: defaultLocation,
+    }
+  ).then(({ value }) => {
+    ElNotification({
+      title: translate("正在修改"),
+      message: value,
+      type: "info",
+    });
+    setLocation({ location: value, hashes })
+      .then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: translate("成功"),
+            message: translate("批量移动成功"),
+            type: "success",
+          });
+          clearSelection();
+          rid.value = 0;
+        } else {
+          ElNotification({
+            title: translate("移动失败"),
+            message: res.msg,
+            type: "error",
+          });
+        }
+      })
+      .catch((err) => {
+        ElNotification({
+          title: translate("移动失败"),
+          message: err,
+          type: "error",
+        });
+      });
+  }).catch(() => {});
+};
+
 const getDownloadListBtn = () => {
   loading.value = true;
   if (rid.value === rid2.value) return;
@@ -287,13 +470,28 @@ const getDownloadListBtn = () => {
       }
       // console.log(resData);
       rid.value = resData.rid;
+      const selectedHashes = selectedTorrents.value.map(t => t.infohash_v1);
       torrents.value = [];
       let torrent = resData.torrents;
       // console.log(torrent);
       Object.keys(torrent).forEach((key) => {
-        torrents.value.push(torrent[key]);
+        const torrentItem = torrent[key];
+        if (selectedHashes.includes(torrentItem.infohash_v1)) {
+          torrentItem.isSelected = true;
+        } else {
+          torrentItem.isSelected = false;
+        }
+        torrents.value.push(torrentItem);
       });
       sortingList(sortingType.value);
+      nextTick(() => {
+        if (tableRef.value && tOrC.value === 'table') {
+          const selectedItems = torrents.value.filter(t => selectedHashes.includes(t.infohash_v1));
+          selectedItems.forEach(item => {
+            tableRef.value.toggleRowSelection(item, true);
+          });
+        }
+      });
       // console.log(torrents.value);
     })
     .catch((err) => {
@@ -351,15 +549,16 @@ const setLocationBtn = (row) => {
   console.log(row.save_path);
   console.log(row.infohash_v1);
   console.log(row);
-  ElMessageBox.prompt(`${translate("当前")}:${row.save_path}`, translate("移动位置"), {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
+  ElMessageBox.prompt(translate("移动位置"), {
+    confirmButtonText: translate("确定"),
+    cancelButtonText: translate("取消"),
     inputPattern: /\S/,
     inputErrorMessage: translate("地址路径不能为空"),
+    inputValue: row.save_path,
   })
     .then(({ value }) => {
       ElNotification({
-        title: "正在修改",
+        title: translate("正在修改"),
         message: value,
         type: "info",
       });
@@ -433,6 +632,66 @@ onMounted(() => {
   height: 30px;
 }
 
+.download-table:deep(.el-table .el-table__row--striped) {
+  background-color: var(--el-fill-color-light);
+}
+
+.download-table:deep(.el-table__body tr.current-row > td),
+.download-table:deep(.el-table__body tr:hover.current-row > td) {
+  background-color: var(--el-color-primary-light-9) !important;
+}
+
+.download-table:deep(.el-table__body tr.selected-row > td) {
+  background-color: var(--el-color-primary-light-9) !important;
+}
+
+.download-table:deep(.el-table__body tr:hover.selected-row > td) {
+  background-color: var(--el-color-primary-light-8) !important;
+}
+
+.batch-actions {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: var(--el-fill-color-blank);
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.batch-actions-right {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .batch-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .batch-actions-right {
+    width: 100%;
+  }
+
+  .batch-action-btn {
+    flex: 1;
+  }
+}
+
 .sorting-item-container {
   display: flex;
   justify-content: space-between;
@@ -450,6 +709,11 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
+.box-card.is-selected {
+  border: 2px solid var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
+
 .box-card:deep(.el-card__header) {
   padding: 6px 10px;
   border-bottom: 0;
@@ -458,6 +722,7 @@ onMounted(() => {
   text-overflow: ellipsis;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .box-card:deep(.el-card__body) {
