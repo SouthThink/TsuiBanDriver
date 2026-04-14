@@ -190,4 +190,12 @@ export default {
   保存: "Save",
   保存成功: "Saved Successfully",
   保存失败: "Save Failed",
+  批量删除: "Batch Delete",
+  批量移动: "Batch Move",
+  取消选择: "Clear Selection",
+  搜索文件名或路径: "Search filename or path",
+  批量移动位置: "Batch Move Location",
+  批量删除成功: "Batch Delete Successful",
+  批量移动成功: "Batch Move Successful",
+  无搜索结果: "No Search Results",
 };
