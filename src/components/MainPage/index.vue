@@ -84,7 +84,7 @@
       direction="rtl"
       :size="size"
     >
-      <BangumiCollapse :AnimeId="AnimeId" />
+      <BangumiCollapse :AnimeId="AnimeId" :openInNewTab="true" />
     </el-drawer>
   </div>
 </template>

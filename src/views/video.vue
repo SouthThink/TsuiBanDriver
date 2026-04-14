@@ -29,7 +29,7 @@
     </div>
     <div class="bangumiList">
       <el-text size="default" class="bangumi-title">番剧列表</el-text>
-      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" @getTitle="setTitle" @closePage="closePage"/>
+      <BangumiCollapse :AnimeId="AnimeId" :Id="videoId" :openInNewTab="false" @getTitle="setTitle" @closePage="closePage" @videoChange="handleVideoChange"/>
     </div>
   </div>
 </template>
@@ -85,9 +85,23 @@ export default {
       document.title = title;
     },
     closePage() {
-      //关闭当前页面
       console.log("关闭当前页面");
       window.close();
+    },
+    handleVideoChange(data) {
+      console.log("切换视频:", data);
+      
+      this.videoId = data.videoId;
+      this.AnimeId = data.AnimeId;
+      this.title = data.title;
+      document.title = data.title;
+      
+      this.$router.replace({
+        name: "video",
+        query: { videoId: data.videoId, AnimeId: data.AnimeId }
+      });
+      
+      this.fetchSubtitleList();
     },
     async fetchSubtitleList() {
       if (!this.videoId) return;

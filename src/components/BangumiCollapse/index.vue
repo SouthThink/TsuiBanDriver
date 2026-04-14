@@ -63,6 +63,10 @@ export default {
       type: String,
       default: () => "",
     },
+    openInNewTab: {
+      type: Boolean,
+      default: false,
+    },
   },
   watch: {
     AnimeId: {
@@ -95,27 +99,20 @@ export default {
     },
     routeToVideo(e) {
       console.log("点击的视频存放在", e.Path);
-      // if (this.$route.path == "/video") {
-      //   this.showBangumiList(this.AnimeId);
-      //   this.$router.push({
-      //     name: "video",
-      //     query: { videoId: e.Id, AnimeId: e.AnimeId },
-      //   });
-      // } else {
-      //   const route = this.$router.resolve({
-      //     name: "video",
-      //     query: { videoId: e.Id, AnimeId: e.AnimeId },
-      //   });
-      //   window.open(route.href, "_blank");
-      // }
-      if (this.$route.path == "/video") {
-        this.$emit("closePage");
+      
+      if (this.openInNewTab) {
+        const route = this.$router.resolve({
+          name: "video",
+          query: { videoId: e.Id, AnimeId: e.AnimeId },
+        });
+        window.open(route.href, "_blank");
+      } else {
+        this.$emit("videoChange", {
+          videoId: e.Id,
+          AnimeId: e.AnimeId,
+          title: e.AnimeTitle + " " + e.EpisodeTitle
+        });
       }
-      const route = this.$router.resolve({
-        name: "video",
-        query: { videoId: e.Id, AnimeId: e.AnimeId },
-      });
-      window.open(route.href, "_blank");
     },
     showBangumiList(e) {
       this.bangumiList = [];
