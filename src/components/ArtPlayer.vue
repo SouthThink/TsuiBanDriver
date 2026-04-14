@@ -6,7 +6,7 @@
 import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
 import tw from "artplayer/dist/i18n/zh-tw.js";
-import { translate } from '@/utils/translate'
+import { translate } from '@/utils/translate';
 
 export default {
   data() {

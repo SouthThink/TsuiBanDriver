@@ -106,9 +106,9 @@ export default {
       search: "",
       size: "100%",
       navType: [
+        { name: "最近播放", type: "lastplay" },
         { name: "番剧季度", type: "season" },
         { name: "最近更新", type: "lastupdate" },
-        { name: "最近播放", type: "lastplay" },
         { name: "最近添加", type: "lastadd" },
         { name: "名称排序", type: "name" },
         { name: "分类排序", type: "category" },

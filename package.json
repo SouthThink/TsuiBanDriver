@@ -13,7 +13,6 @@
     "@vueuse/core": "^12.7.0",
     "artplayer": "^5.2.2",
     "artplayer-plugin-danmuku": "^5.1.5",
-    "artplayer-plugin-libass": "^1.0.0",
     "axios": "^1.7.9",
     "element-plus": "^2.9.4",
     "vue": "^3.5.13",
