@@ -57,28 +57,46 @@ export default {
     },
     
     getDanmukuConfig(videoId) {
+      const danmukuUrl = `/yzr/comment?videoId=${videoId}`;
+      
       const baseConfig = {
-        danmuku: `/yzr/comment?videoId=${videoId}`,
+        visible: true,
+        modes: [0, 1, 2],
         heatmap: true,
         emitter: true,
         speed: 15,
         maxLength: 50,
         antiOverlap: true,
         synchronousPlayback: false,
+        opacity: 1,
+        margin: [0, 75],
+        fontSize: 25,
+      };
+      
+      const savedConfig = JSON.parse(localStorage.getItem("danmuku") || "{}");
+      const userSettings = {
+        visible: savedConfig.visible !== undefined ? savedConfig.visible : baseConfig.visible,
+        modes: savedConfig.modes !== undefined ? savedConfig.modes : baseConfig.modes,
+        heatmap: savedConfig.heatmap !== undefined ? savedConfig.heatmap : baseConfig.heatmap,
+        emitter: savedConfig.emitter !== undefined ? savedConfig.emitter : baseConfig.emitter,
+        speed: savedConfig.speed !== undefined ? savedConfig.speed : baseConfig.speed,
+        maxLength: savedConfig.maxLength !== undefined ? savedConfig.maxLength : baseConfig.maxLength,
+        antiOverlap: savedConfig.antiOverlap !== undefined ? savedConfig.antiOverlap : baseConfig.antiOverlap,
+        synchronousPlayback: savedConfig.synchronousPlayback !== undefined ? savedConfig.synchronousPlayback : baseConfig.synchronousPlayback,
+        opacity: savedConfig.opacity !== undefined ? savedConfig.opacity : baseConfig.opacity,
+        margin: savedConfig.margin !== undefined ? savedConfig.margin : baseConfig.margin,
+        fontSize: savedConfig.fontSize !== undefined ? savedConfig.fontSize : baseConfig.fontSize,
       };
       
       if (this.isMobile) {
-        baseConfig.heatmap = false;
-        baseConfig.emitter = false;
-        return baseConfig;
-      } else {
-        const savedConfig = JSON.parse(localStorage.getItem("danmuku") || "{}");
-        return {
-          ...baseConfig,
-          ...savedConfig,
-          danmuku: `/yzr/comment?videoId=${videoId}`,
-        };
+        userSettings.heatmap = false;
+        userSettings.emitter = false;
       }
+      
+      return {
+        danmuku: danmukuUrl,
+        ...userSettings,
+      };
     },
     
     initPlayer() {
@@ -168,7 +186,7 @@ export default {
         
         this.instance.on("artplayerPluginDanmuku:config", (option) => {
           if (!this.isMobile) {
-            const { mount, ...rest } = option;
+            const { mount, danmuku, ...rest } = option;
             localStorage.setItem("danmuku", JSON.stringify(rest));
           }
         });
@@ -214,8 +232,8 @@ export default {
           
           if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
             const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
-            if (danmukuPlugin.danmuku) {
-              danmukuPlugin.danmuku = newDanmuku;
+            if (typeof danmukuPlugin.load === 'function') {
+              danmukuPlugin.load(newDanmuku);
             }
           }
           
