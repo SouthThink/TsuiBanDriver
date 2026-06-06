@@ -26,7 +26,7 @@
     </div>
     <el-skeleton :loading="loading" animated :count="3">
       <template #template>
-        <div class="bangumi-card">
+        <div class="bangumi- card">
           <el-skeleton-item class="bangumi-card-title" variant="h3" />
           <el-row :gutter="24">
             <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n" 
@@ -54,7 +54,7 @@
           v-show="videoList[item] !== undefined"
         >
           <el-text class="bangumi-card-title">{{ item }}</el-text>
-          <el-row :gutter="24" class="bangumi-card-row">
+          <el-row :gutter="12" class="bangumi-card-row">
             <el-col
               :xs="8"
               :sm="6"
@@ -62,7 +62,6 @@
               :lg="3"
               v-for="video in videoList[item]"
               :key="video.Id"
-              style="padding-left: 5px;padding-right: 5px;"
             >
               <BangumiCardRow
                 @click="showDrawer(video)"

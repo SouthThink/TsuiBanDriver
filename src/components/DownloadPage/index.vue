@@ -155,13 +155,18 @@
           </template>
         </el-input>
         <div class="batch-actions-right" v-if="selectedTorrents.length > 0">
-          <el-button type="danger" class="batch-action-btn" @click="batchDelete">
-            {{translate('批量删除')}} ({{ selectedTorrents.length }})
-          </el-button>
-          <el-button type="primary" class="batch-action-btn" @click="batchSetLocation">
-            {{translate('批量移动')}} ({{ selectedTorrents.length }})
-          </el-button>
-          <el-button class="batch-action-btn" @click="clearSelection">{{translate('取消选择')}}</el-button>
+          <div class="batch-btn-group">
+            <el-button type="danger" class="batch-action-btn" @click="batchDelete">
+              {{translate('批量删除')}} ({{ selectedTorrents.length }})
+            </el-button>
+            <el-button type="primary" class="batch-action-btn" @click="batchSetLocation">
+              {{translate('批量移动')}} ({{ selectedTorrents.length }})
+            </el-button>
+          </div>
+          <div class="batch-btn-group">
+            <el-button class="batch-action-btn" @click="selectAll">{{translate('全选')}}</el-button>
+            <el-button class="batch-action-btn" @click="clearSelection">{{translate('取消选择')}}</el-button>
+          </div>
         </div>
       </div>
       <div class="sorting-item-container">
@@ -213,23 +218,23 @@
             </template>
             <el-popover placement="bottom" trigger="click">
               <template #reference>
-                <el-descriptions :column="6" border size="small">
-                  <el-descriptions-item :label="translate('保存路径')" :span="6">
+                <el-descriptions :column="4" border size="small">
+                  <el-descriptions-item :label="translate('保存路径')" :span="4">
                     {{ torrent.save_path }}
                   </el-descriptions-item>
                   <el-descriptions-item :label="translate('添加时间')" :span="2">
                     {{ formatDate(torrent.added_on) }}
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('做种数')" :span="2">
-                      {{ torrent.num_complete }}
+                  <el-descriptions-item :label="translate('已下载')" :span="2">
+                    {{ fileSize(torrent.downloaded) }}
                   </el-descriptions-item>
                   <el-descriptions-item :label="translate('状态')" :span="2">
                     <el-tag :type="stateColor(torrent.state)">
                       {{ translate(stateText(torrent.state)) }}
                     </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('已下载')" :span="1">
-                    {{ fileSize(torrent.downloaded) }}
+                  <el-descriptions-item :label="translate('做种数')" :span="1">
+                      {{ torrent.num_complete }}
                   </el-descriptions-item>
                   <el-descriptions-item :label="translate('剩余')" :span="1">
                     {{ formatTime(torrent.eta) }}
@@ -237,10 +242,10 @@
                   <el-descriptions-item :label="translate('下载')" :span="2">
                     {{ formatSpeed(torrent.dlspeed) }}
                   </el-descriptions-item>
-                   <el-descriptions-item :label="translate('上传')" :span="2">
+                  <el-descriptions-item :label="translate('上传')" :span="2">
                     {{ formatSpeed(torrent.upspeed) }}
                   </el-descriptions-item>
-                  <el-descriptions-item :label="translate('下载进度')" :span="6">
+                  <el-descriptions-item :label="translate('下载进度')" :span="4">
                     <el-progress
                       :percentage="
                         parseFloat((torrent.progress * 100).toFixed(1))
@@ -350,6 +355,14 @@ const handleCardSelection = (torrent) => {
 
 const isTorrentSelected = (torrent) => {
   return selectedTorrents.value.some(t => t.infohash_v1 === torrent.infohash_v1);
+};
+
+const selectAll = () => {
+  selectedTorrents.value = [];
+  filteredTorrents.value.forEach(torrent => {
+    torrent.isSelected = true;
+    selectedTorrents.value.push(torrent);
+  });
 };
 
 const clearSelection = () => {
@@ -612,10 +625,13 @@ onMounted(() => {
     clearInterval(timer.value);
   });
   tOrC.value = localStorage.getItem("downPageType");
-  // console.log(tOrC.value);
 });
 </script>
 <style scoped>
+.download-page {
+  overflow-x: hidden;
+}
+
 .download-table:deep(.el-table td.el-table__cell div) {
   white-space: nowrap;
   font-size: 12px;
@@ -651,9 +667,9 @@ onMounted(() => {
 
 .batch-actions {
   margin-bottom: 10px;
-  padding: 10px;
+  /* padding: 10px; */
   background-color: var(--el-fill-color-blank);
-  border: 1px solid var(--el-border-color);
+  /* border: 1px solid var(--el-border-color); */
   border-radius: 4px;
   display: flex;
   gap: 10px;
@@ -673,6 +689,12 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.batch-btn-group {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .batch-actions {
     flex-direction: column;
@@ -685,10 +707,42 @@ onMounted(() => {
 
   .batch-actions-right {
     width: 100%;
+    flex-wrap: wrap;
   }
 
-  .batch-action-btn {
+  .batch-btn-group {
+    width: 100%;
+  }
+
+  .batch-btn-group .batch-action-btn {
     flex: 1;
+  }
+
+  .download-card .batch-actions {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    background-color: transparent;
+    border: none;
+  }
+
+  .download-card .batch-actions-right {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 8px;
+    gap: 4px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .download-card .batch-btn-group {
+    width: 100%;
+  }
+
+  .download-card .batch-btn-group:nth-child(2) .batch-action-btn {
+    background-color: var(--el-bg-color);
   }
 }
 
@@ -702,6 +756,28 @@ onMounted(() => {
   scrollbar-width: none;
   overflow: scroll;
   flex-wrap: nowrap;
+}
+
+@media (max-width: 428px) {
+  .sorting-item-container {
+    flex-direction: column;
+  }
+
+  .sorting-item {
+    width: 100%;
+  }
+
+  .sorting-item:deep(.el-radio-group) {
+    width: 100%;
+  }
+
+  .sorting-item:deep(.el-radio-button) {
+    flex: 1;
+  }
+
+  .sorting-item:deep(.el-radio-button__inner) {
+    width: 100%;
+  }
 }
 
 .box-card {

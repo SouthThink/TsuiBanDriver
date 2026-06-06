@@ -18,6 +18,11 @@ if (localStorage.getItem('lang')) {
   localStorage.setItem('lang', currentLang);
 }
 
+// 获取当前语言
+export function getCurrentLang() {
+  return currentLang;
+}
+
 // 获取翻译
 export function translate(key) {
   const translations = languages[currentLang];

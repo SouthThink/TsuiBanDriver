@@ -36,7 +36,7 @@
           <div class="table">
             <el-table :data="currentPageData">
               <el-table-column property="title" :label="translate('标题')" />
-              <el-table-column :label="translate('操作')" width="85">
+              <el-table-column :label="translate('操作')" width="85" align="center">
                 <template #header>
                   <el-button
                     type="primary"
@@ -112,12 +112,20 @@ import {
 } from "@/api/yzrServer.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
-import { ref, computed } from "vue";
+import { ref, computed, inject, watch } from "vue";
 import { createDownload } from "@/utils/utils.js";
 import { setSize } from "@/utils/utils";
 import { translate } from "@/utils/translate";
 
 const input = ref("");
+const searchQuery = inject("searchQuery");
+
+watch(searchQuery, (val) => {
+  if (val) {
+    input.value = val;
+    searchQuery.value = "";
+  }
+});
 const resultList = ref([]);
 const rssItem = ref({ item: [] });
 const loading = ref(false);
