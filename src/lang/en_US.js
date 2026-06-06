@@ -84,6 +84,8 @@ export default {
   时间表: "Schedule",
   暂无数据: "No Data",
   番剧季度: "Bangumi Season",
+  时间表设置: "Timetable Settings",
+  使用Bangumi镜像: "Use Bangumi Mirror",
   最近更新: "Recently Updated",
   最近播放: "Recently Played",
   最近添加: "Recently Added",

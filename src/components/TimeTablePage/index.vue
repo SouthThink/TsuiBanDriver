@@ -50,6 +50,12 @@ import "@/components/BangumiCardRow/index.css";
 const emit = defineEmits(["go-search"]);
 
 const BGMI_API = "https://api.bgm.tv";
+const BGMI_MIRROR_API = "https://bgmapi.anibt.net/";
+
+function getBgmApi() {
+  const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
+  return settings.useMirror ? BGMI_MIRROR_API : BGMI_API;
+}
 
 const navType = [
   { name: "星期一", type: 1 },
@@ -89,7 +95,7 @@ onMounted(() => {
 async function fetchCalendar() {
   loading.value = true;
   try {
-    const { data } = await axios.get(`${BGMI_API}/calendar`);
+    const { data } = await axios.get(`${getBgmApi()}/calendar`);
     calendarData.value = data;
   } catch (err) {
     console.error("获取时间表失败:", err);

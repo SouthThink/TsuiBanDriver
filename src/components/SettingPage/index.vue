@@ -19,6 +19,12 @@
     </el-card>
     <el-card class="setting-card">
       <template #header>
+        <el-text size="large">{{translate("时间表设置")}}</el-text>
+      </template>
+      <timeTableSetting />
+    </el-card>
+    <el-card class="setting-card">
+      <template #header>
         <el-text size="large">{{translate("搜索设置")}}</el-text>
       </template>
         <searchSetting />
@@ -57,6 +63,7 @@ import darkSwitch from "./components/darkSwitch.vue";
 import language from "./components/language.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
+import timeTableSetting from "./components/timeTableSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
 import backendSetting from "./components/backendSetting.vue";
 import about from "./components/about.vue";
