@@ -124,6 +124,10 @@ watch(searchQuery, (val) => {
   if (val) {
     input.value = val;
     searchQuery.value = "";
+    const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
+    if (settings.clickAction === "searchAndGo") {
+      searchAllInfoBtn();
+    }
   }
 });
 const resultList = ref([]);
