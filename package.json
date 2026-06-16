@@ -15,6 +15,7 @@
     "artplayer-plugin-danmuku": "^5.1.5",
     "axios": "^1.7.9",
     "element-plus": "^2.9.4",
+    "marked": "^18.0.5",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

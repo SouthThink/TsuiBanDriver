@@ -10,68 +10,11 @@
       />
     </div>
     <el-skeleton :loading="loading" animated :count="3">
-      <template #template> </template>
       <template #default>
-        <div
-          class="result"
-          v-if="resultList.length > 0 || rssItem.item.length > 0"
-        >
-          <el-row :gutter="24" class="bangumi-card-row" :loading="true">
-            <el-col
-              :xs="colNum"
-              :sm="colNum"
-              :md="colNum"
-              :lg="colNum"
-              v-for="video in resultList"
-              :key="video.Id"
-            >
-              <BangumiCardRow
-                :imgUrl="video.img"
-                :title="video.title"
-                @click="getSubgroupInfoBtn(video)"
-              />
-            </el-col>
-          </el-row>
-
-          <div class="table">
-            <el-table :data="currentPageData">
-              <el-table-column property="title" :label="translate('标题')" />
-              <el-table-column :label="translate('操作')" width="85" align="center">
-                <template #header>
-                  <el-button
-                    type="primary"
-                    @click="addSearchRss"
-                    style="white-space: nowrap"
-                  >
-                    {{ translate("订阅") }}
-                  </el-button>
-                </template>
-                <template #default="scope">
-                  <el-button
-                    type="primary"
-                    :icon="Download"
-                    circle
-                    @click="
-                      createDownload(
-                        scope.row.enclosure['@url'],
-                        scope.row.description
-                      )
-                    "
-                  />
-                </template>
-              </el-table-column>
-            </el-table>
-            <el-pagination
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              :current-page="currentPage"
-              :page-size="pageSize"
-              layout="prev, pager, next"
-              :total="rssItem.item.length"
-              class="pagination"
-            />
-          </div>
-        </div>
+        <SearchResult
+          :data="searchData"
+          @select-bangumi="getSubgroupInfoBtn"
+        />
       </template>
     </el-skeleton>
     <el-drawer
@@ -100,20 +43,15 @@
   </div>
 </template>
 <script setup>
-import { Download } from "@element-plus/icons-vue";
-import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
-import "element-plus/dist/index.css";
-import "@/components/BangumiCardRow/index.css";
+import { ref, inject, watch } from "vue";
+import SearchResult from "@/components/SearchResult/index.vue";
 import {
   searchAllInfo,
   addRssLink,
   getSubgroupInfo,
-  addFeed,
 } from "@/api/yzrServer.js";
 import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
-import { ref, computed, inject, watch } from "vue";
-import { createDownload } from "@/utils/utils.js";
 import { setSize } from "@/utils/utils";
 import { translate } from "@/utils/translate";
 
@@ -130,66 +68,13 @@ watch(searchQuery, (val) => {
     }
   }
 });
-const resultList = ref([]);
-const rssItem = ref({ item: [] });
+
+const searchData = ref({ bangumiItem: [], rssItems: [], rssLink: '' });
 const loading = ref(false);
 const subtitleGroupList = ref([]);
 const showBangumi = ref(false);
 const subtitleGroupListLoading = ref(false);
 const bangumiId = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(10);
-
-const currentPageData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = currentPage.value * pageSize.value;
-  return rssItem.value.item.slice(start, end);
-});
-
-const colNum = computed(() => {
-  const lengthToValueMap = { 4: 6, 3: 8, 2: 12, 1: 24 };
-  return lengthToValueMap[resultList.value.length];
-});
-
-const handleSizeChange = (newSize) => {
-  pageSize.value = newSize;
-};
-
-const handleCurrentChange = (newPage) => {
-  currentPage.value = newPage;
-};
-
-const addSearchRss = () => {
-  console.log("订阅", rssItem.value.link);
-  ElNotification({
-    title: translate("正在订阅"),
-    message: rssItem.value.link,
-    type: "info",
-  });
-  addFeed({ url: rssItem.value.link, path: "" })
-    .then((res) => {
-      if (res.code === 200) {
-        ElNotification({
-          title: translate("提示"),
-          message: translate("添加成功"),
-          type: "success",
-        });
-      } else {
-        ElNotification({
-          title: translate("提示"),
-          message: translate("添加失败"),
-          type: "error",
-        });
-      }
-    })
-    .catch((err) => {
-      ElNotification({
-        title: translate("添加失败"),
-        message: err,
-        type: "error",
-      });
-    });
-};
 
 const searchAllInfoBtn = () => {
   loading.value = true;
@@ -198,13 +83,16 @@ const searchAllInfoBtn = () => {
   })
     .then((res) => {
       if (res.code == 200) {
-        resultList.value = res.data.bangumiItem;
-        //将字符串解析为json
-        rssItem.value = JSON.parse(res.data.rss).rss.channel;
-        if (!Array.isArray(rssItem.value.item)) {
-          rssItem.value.item = [rssItem.value.item];
+        let rss = JSON.parse(res.data.rss).rss.channel;
+        let items = rss.item;
+        if (!Array.isArray(items)) {
+          items = [items];
         }
-        // console.log(rssItem.value.item);
+        searchData.value = {
+          bangumiItem: res.data.bangumiItem,
+          rssItems: items,
+          rssLink: rss.link || '',
+        };
         loading.value = false;
       } else if (res.code == 404) {
         loading.value = false;
@@ -337,42 +225,4 @@ const getRssLinkBtn = (e) => {
   cursor: pointer;
 }
 
-.result {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: center;
-}
-
-.bangumi-card-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: start;
-  margin: 0 -10px;
-  max-width: 600px;
-}
-
-.table {
-  width: 90%;
-  margin-top: 20px;
-}
-
-.table:deep(.el-table td.el-table__cell div) {
-  white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-  .table {
-    width: 100%;
-    margin-top: 20px;
-  }
-}
-
-.pagination {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-}
 </style>
