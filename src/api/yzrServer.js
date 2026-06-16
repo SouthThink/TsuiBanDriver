@@ -290,6 +290,14 @@ export function addEditAiConfig(data) {
   });
 }
 
+export function aiChat(data) {
+  return request(BASE_URL,{
+    url: "/aiChat",
+    method: "post",
+    data,
+  });
+}
+
 export function deleteAiConfig(data) {
   return request(BASE_URL,{
       method: "post",

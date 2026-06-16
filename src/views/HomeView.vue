@@ -16,6 +16,9 @@ x
     <el-tab-pane :label="translate('下载')" name="fifth">
       <DownloadPage v-if="activeName === 'fifth'" />
     </el-tab-pane>
+    <el-tab-pane :label="translate('AI对话')" name="seventh">
+      <AIChatPage/>
+    </el-tab-pane>
     <el-tab-pane :label="translate('设置')" name="sixth">
       <SettingPage />
     </el-tab-pane>
@@ -29,6 +32,7 @@ import SettingPage from "@/components/SettingPage/index.vue";
 import DownloadPage from "@/components/DownloadPage/index.vue";
 import TimeTablePage from "@/components/TimeTablePage/index.vue";
 import SubscribePage from "@/components/SubscribePage/index.vue";
+import AIChatPage from "@/components/AIChatPage/index.vue";
 import { translate } from '@/utils/translate'
 const activeName = ref("first");
 const searchQuery = ref("");
@@ -63,6 +67,9 @@ const handleGoSearch = (name) => {
   overflow: auto;
   /* 隐藏滚动条 */
   /* scrollbar-width: none; */
+}
+.tabs:deep(.el-tab-pane) {
+  height: 100%;
 }
 </style>
 <style>
