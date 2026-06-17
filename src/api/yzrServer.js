@@ -26,158 +26,85 @@ export function getSubgroupInfo(data) {
   });
 }
 
-// export function getRssItems(params) {
-//   return request(BASE_URL,{
-//     url: "/getItems",
-//     method: "get",
-//     params,
-//   });
-// }
-
 export function getRssItems(params) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/rssItems",
     method: "get",
-    params: {
-      url: "rss/items",
-      ...params,
-    },
+    params,
   });
 }
 
 export function getDownloadList(params) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/downloadList",
     method: "get",
-    params: {
-      url: "sync/maindata",
-      ...params,
-    },
+    params,
   });
 }
-
-// export function removeItem(data) {
-//   return request(BASE_URL,{
-//     url: "/removeItem",
-//     method: "post",
-//     data,
-//   });
-// }
 
 export function removeItem(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/removeItem",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/removeItem"
-    },
+    data,
   });
 }
-
-// export function refreshItem(data) {
-//   return request(BASE_URL,{
-//     url: "/refreshItem",
-//     method: "post",
-//     data,
-//   });
-// }
 
 export function refreshItem(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/refreshItem",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/refreshItem"
-    },
+    data,
   });
 }
 
-// export function moveItem(data) {
-//   return request(BASE_URL,{
-//     url: "/moveItem",
-//     method: "post",
-//     data,
-//   });
-// }
-
 export function moveItem(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/moveItem",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/moveItem"
-    },
+    data,
   });
 }
 
 export function markAsRead(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/markAsRead",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/markAsRead"
-    },
+    data,
   });
 }
 
 export function addFeed(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/addFeed",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/addFeed"
-    },
+    data,
   });
 }
 
 export function addTorrents(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/addTorrents",
     method: "post",
-    data:{
-      data: data,
-      url:"torrents/add"
-    },
+    data,
   });
 }
 
 export function deleteTorrents(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/deleteTorrents",
     method: "post",
-    data:{
-      data: data,
-      url:"torrents/delete"
-    },
+    data,
   });
 }
 
 export function getRssRules(params) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/rssRules",
     method: "get",
-    params:{
-      ...params,
-      url:"rss/rules"
-    },
+    params,
   });
 }
-
-// export function setRule(data) {
-//   return request(BASE_URL,{
-//     url: "/everything",
-//     method: "post",
-//     data:{
-//       data: data,
-//       url:"rss/setRule"
-//     },
-//   });
-// }
 
 export function setRule(data) {
   return request(BASE_URL,{
@@ -189,34 +116,25 @@ export function setRule(data) {
 
 export function matchingArticles(params) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/matchingArticles",
     method: "get",
-    params:{
-      ...params,
-      url:"rss/matchingArticles"
-    },
+    params,
   });
 }
 
 export function removeRule(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/removeRule",
     method: "post",
-    data:{
-      data: data,
-      url:"rss/removeRule"
-    },
+    data,
   });
 }
 
 export function setLocation(data) {
   return request(BASE_URL,{
-    url: "/everything",
+    url: "/setLocation",
     method: "post",
-    data:{
-      data: data,
-      url:"torrents/setLocation"
-    },
+    data,
   });
 }
 

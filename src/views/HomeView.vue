@@ -26,13 +26,13 @@ x
 </template>
 <script setup>
 import { ref, provide } from "vue";
-import HomePage from "@/components/MainPage/index.vue";
-import SearchPage from "@/components/SearchPage/index.vue";
-import SettingPage from "@/components/SettingPage/index.vue";
-import DownloadPage from "@/components/DownloadPage/index.vue";
-import TimeTablePage from "@/components/TimeTablePage/index.vue";
-import SubscribePage from "@/components/SubscribePage/index.vue";
-import AIChatPage from "@/components/AIChatPage/index.vue";
+import HomePage from "@/pages/MainPage/index.vue";
+import SearchPage from "@/pages/SearchPage/index.vue";
+import SettingPage from "@/pages/SettingPage/index.vue";
+import DownloadPage from "@/pages/DownloadPage/index.vue";
+import TimeTablePage from "@/pages/TimeTablePage/index.vue";
+import SubscribePage from "@/pages/SubscribePage/index.vue";
+import AIChatPage from "@/pages/AIChatPage/index.vue";
 import { translate } from '@/utils/translate'
 const activeName = ref("first");
 const searchQuery = ref("");

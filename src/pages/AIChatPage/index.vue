@@ -127,9 +127,11 @@ import { ChatDotRound, User, Cpu, Promotion, Tools, Finished } from '@element-pl
 import { marked } from 'marked'
 import { translate } from '@/utils/translate'
 import SearchResult from '@/components/SearchResult/index.vue'
+import SubscribeTable from '@/components/SubscribeTable/index.vue'
 
 const componentMap = {
   SearchResult: markRaw(SearchResult),
+  SubscribeTable: markRaw(SubscribeTable),
 }
 
 const getToolResultComponent = (componentName) => {
