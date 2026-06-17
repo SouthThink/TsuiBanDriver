@@ -240,6 +240,21 @@ export function setSubtitle(params) {
   });
 }
 
+export function getAiChatConfig() {
+  return request(BASE_URL,{
+    url: "/aiChatConfig",
+    method: "get",
+  });
+}
+
+export function saveAiChatConfig(data) {
+  return request(BASE_URL,{
+    method: "post",
+    url: "/saveAiChatConfig",
+    data,
+  });
+}
+
 export function getSearchConfig(params) {
   return request(BASE_URL,{
     url: "/getSearchConfig",

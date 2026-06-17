@@ -1,6 +1,5 @@
 <template>
   <div class="setting-item">
-    <!-- 设置会在第一次观看视频后生成 -->
     <el-text>{{ translate("模型选择") }}</el-text>
     <el-select
       v-model="moduel"
@@ -19,7 +18,6 @@
     </el-select>
   </div>
   <div class="setting-item">
-    <!-- 设置会在第一次观看视频后生成 -->
     <el-text>{{ translate("运行硬件选择") }}</el-text>
     <el-select
       v-model="device"
@@ -37,35 +35,85 @@
       />
     </el-select>
   </div>
+  <div class="setting-item">
+    <el-text>{{ translate("API Key") }}</el-text>
+    <el-input
+      v-model="chatApiKey"
+      :placeholder="translate('请输入API Key')"
+      style="max-width: 60%; width: 240px"
+      type="password"
+      show-password
+      @change="saveChatConfig"
+    />
+  </div>
+  <div class="setting-item">
+    <el-text>{{ translate("API地址") }}</el-text>
+    <el-input
+      v-model="chatBaseUrl"
+      :placeholder="translate('请输入API地址')"
+      style="max-width: 60%; width: 240px"
+      @change="saveChatConfig"
+    />
+  </div>
+  <div class="setting-item">
+    <el-text>{{ translate("对话模型") }}</el-text>
+    <el-input
+      v-model="chatModel"
+      :placeholder="translate('请输入模型名称')"
+      style="max-width: 60%; width: 240px"
+      @change="saveChatConfig"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { translate } from "@/utils/translate";
 import { ref } from "vue";
-import { aiConfig,addEditAiConfig } from "@/api/yzrServer.js";
+import { aiConfig, addEditAiConfig, getAiChatConfig, saveAiChatConfig } from "@/api/yzrServer.js";
 
 const moduel = ref("");
 const moduelList = ref([]);
 const device = ref("");
 const deviceList = ref([]);
+
+const chatApiKey = ref("");
+const chatBaseUrl = ref("");
+const chatModel = ref("");
+
 const getModuelList = async () => {
   aiConfig().then((res) => {
     moduel.value = res.default_model;
     moduelList.value = res.valid_models;
     device.value = res.default_device;
     deviceList.value = res.valid_devices;
-    // console.log(res, "获取默认模型"); // 获取默认模型
   });
 };
-// console.log(moduelList.value, "获取模型列表");
+
+const loadChatConfig = async () => {
+  getAiChatConfig().then((res) => {
+    if (res.code === 200 && res.data) {
+      chatApiKey.value = res.data.api_key || "";
+      chatBaseUrl.value = res.data.base_url || "";
+      chatModel.value = res.data.model || "";
+    }
+  });
+};
+
 getModuelList();
+loadChatConfig();
+
 const changeAiConfig = (key) => {
-    
   addEditAiConfig({
     ai_config_key: key,
     ai_config_value: key == "default_model" ? moduel.value : device.value,
-  }).then((res) => {
-    // console.log(res, "修改默认模型");
+  }).then((res) => {});
+};
+
+const saveChatConfig = () => {
+  saveAiChatConfig({
+    api_key: chatApiKey.value,
+    base_url: chatBaseUrl.value,
+    model: chatModel.value,
   });
 };
 </script>
