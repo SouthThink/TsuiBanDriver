@@ -35,6 +35,9 @@ importers:
       vue-router:
         specifier: ^4.5.0
         version: 4.5.0(vue@3.5.13)
+      wretch:
+        specifier: ^3.0.9
+        version: 3.0.9
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^5.2.1
@@ -1336,6 +1339,10 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
+  wretch@3.0.9:
+    resolution: {integrity: sha512-RXJQp5aOBfHQaDCLRyFXQooWDBOHrQxVgCH/6OFaFPBKjeUiXMQ3NV1b8qqI7CR+v4meVBWYs242P8n+rWRjzA==}
+    engines: {node: '>=22'}
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
@@ -2596,6 +2603,8 @@ snapshots:
   which@2.0.2:
     dependencies:
       isexe: 2.0.0
+
+  wretch@3.0.9: {}
 
   yallist@3.1.1: {}
 

@@ -43,18 +43,15 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { translate, getCurrentLang } from "@/utils/translate";
-import axios from "axios";
+import { bangumiProxy } from "@/api/yzrServer";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
 
 const emit = defineEmits(["go-search"]);
 
-const BGMI_API = "https://api.bgm.tv";
-const BGMI_MIRROR_API = "https://bgmapi.anibt.net/";
-
-function getBgmApi() {
+function getUseMirror() {
   const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
-  return settings.useMirror ? BGMI_MIRROR_API : BGMI_API;
+  return settings.useMirror || false;
 }
 
 const navType = [
@@ -95,8 +92,13 @@ onMounted(() => {
 async function fetchCalendar() {
   loading.value = true;
   try {
-    const { data } = await axios.get(`${getBgmApi()}/calendar`);
-    calendarData.value = data;
+    const res = await bangumiProxy("calendar", { params: { useMirror: getUseMirror() } });
+    if (res.code === 200) {
+      calendarData.value = res.data;
+    } else {
+      console.error("获取时间表失败:", res.msg);
+      calendarData.value = [];
+    }
   } catch (err) {
     console.error("获取时间表失败:", err);
     calendarData.value = [];

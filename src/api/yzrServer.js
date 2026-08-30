@@ -308,3 +308,13 @@ export function testBackendConnection(data) {
     data,
   });
 }
+
+export function bangumiProxy(subpath, config = {}) {
+  const safePath = subpath.replace(/^\/+/, "");
+  return request(BASE_URL,{
+    url: `/proxy/${safePath}`,
+    method: (config.method || "get").toLowerCase(),
+    params: config.params,
+    data: config.data,
+  });
+}
