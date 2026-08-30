@@ -311,7 +311,7 @@ const loadSearchConfig = () => {
       proxyHost.value = res.data.proxy_host || "";
       proxyPort.value = res.data.proxy_port || "";
     }
-  });
+  }).catch(() => {});
 };
 
 // 保存搜索配置
@@ -332,13 +332,8 @@ const saveSearchConfig = (optionsOrEvent = {}) => {
       if (options.closeDialog) {
         searchHeaderDialog.value = false;
       }
-    } else {
-      ElMessage({
-        message: res.msg || translate("保存失败"),
-        type: "error",
-      });
     }
-  });
+  }).catch(() => {});
 };
 
 // 测试代理连接
@@ -395,10 +390,6 @@ const testProxyConnection = () => {
       success: false,
       error: `${translate("网络错误")}: ${error.message}`,
     };
-    ElMessage({
-      message: translate("网络错误"),
-      type: "error",
-    });
   });
 };
 
@@ -421,13 +412,8 @@ const changeSearchRule = (e) => {
         message: translate("修改成功"),
         type: "success",
       });
-    } else {
-      ElMessage({
-        message: res.msg,
-        type: "error",
-      });
     }
-  });
+  }).catch(() => {});
 };
 
 const getRuleListFun = () => {
@@ -437,8 +423,8 @@ const getRuleListFun = () => {
       ruleKeyList.value = res.data.rule_list;
       rule.value = res.data.used_rule.name;
       // console.log(res, "搜索规则列表");
-    });
-  });
+    }).catch(() => {});
+  }).catch(() => {});
 };
 
 getRuleListFun();
@@ -464,13 +450,13 @@ const addRule = (data) => {
   addEditRule(data).then((res) => {
     // console.log(res, "添加规则结果");
     ElNotification({
-      message: res.msg,
-      type: res.code === 200 ? "success" : "error",
+      message: translate("保存成功"),
+      type: "success",
       title: translate("提示"),
     });
     getRuleListFun();
     scrollToBottom();
-  });
+  }).catch(() => {});
 };
 
 const addBtnClick = () => {
@@ -504,12 +490,12 @@ const deleteRuleBtnClick = (name) => {
   deleteRule({ name }).then((res) => {
     // console.log(res, "删除规则结果");
     ElNotification({
-      message: res.msg,
-      type: res.code === 200 ? "success" : "error",
+      message: translate("删除成功"),
+      type: "success",
       title: "提示",
     });
     getRuleListFun();
-  });
+  }).catch(() => {});
 };
 
 const scrollToBottom = () => {

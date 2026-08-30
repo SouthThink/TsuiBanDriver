@@ -17,6 +17,31 @@ function buildUrl(url, params) {
   return url.includes("?") ? `${url}&${qs}` : `${url}?${qs}`;
 }
 
+function parseBody(contentType, response) {
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+  return response.text().then((text) => {
+    try {
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return text;
+    }
+  });
+}
+
+// 统一错误提示（toast），优先使用后端返回的中文 title
+function showError(body, status) {
+  if (body && typeof body === "object") {
+    const title = body.title || body.msg;
+    if (title) {
+      ElMessage.error(title);
+      return;
+    }
+  }
+  ElMessage.error(`请求失败 (${status})`);
+}
+
 function request(BASE_URL, config) {
   const token = localStorage.getItem("token") || "";
   const params = { ...(config.params || {}) };
@@ -50,19 +75,35 @@ function request(BASE_URL, config) {
     const run = (req) => {
       try {
         req
-          .res((response) => {
+          .res(async (response) => {
             const contentType = response.headers.get("content-type") || "";
-            if (contentType.includes("application/json")) {
-              return response.json().then((data) => ({ data }));
+            const body = await parseBody(contentType, response);
+            const isHttpError = response.status >= 400;
+            const businessError =
+              body &&
+              typeof body === "object" &&
+              typeof body.code === "number" &&
+              body.code !== 200
+                ? body
+                : null;
+            if (isHttpError || businessError) {
+              const errBody =
+                businessError || (body && typeof body === "object" ? body : {});
+              const err = new Error(
+                errBody.title || errBody.msg || `HTTP ${response.status}`
+              );
+              err.code = errBody.code || response.status;
+              err.data = errBody;
+              // 401 登录过期不弹 toast，其余错误统一在此提示
+              if (err.code !== 401) {
+                showError(errBody, response.status);
+              }
+              throw err;
             }
-            return response.text().then((text) => ({ data: text }));
+            return { data: body };
           })
           .then(({ data }) => {
-            if (data && data.code == 401) {
-              // 处理登录状态过期的情况
-            } else {
-              resolve(data);
-            }
+            resolve(data);
           })
           .catch((err) => {
             reject(err);

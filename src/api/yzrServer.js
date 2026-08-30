@@ -318,3 +318,19 @@ export function bangumiProxy(subpath, config = {}) {
     data: config.data,
   });
 }
+
+export function searchBangumi(params) {
+  return request(BASE_URL,{
+    url: "/bangumi/search",
+    method: "get",
+    params,
+  });
+}
+
+export function bangumiList(params) {
+  return request(BASE_URL,{
+    url: "/bangumiList",
+    method: "get",
+    params,
+  });
+}

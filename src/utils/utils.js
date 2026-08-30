@@ -140,23 +140,18 @@ const createDownload = (url, name) => {
         type: "info",
       });
       // 调用addTorrents函数，传入下载链接和保存地址，并返回结果
-      addTorrents({ urls: url, savepath: value }).then((res) => {
-        // 如果返回结果的状态码为200，则弹出通知，提示添加成功
-        if (res.code === 200) {
-          ElNotification({
-            title: "添加成功",
-            message: "添加成功",
-            type: "success",
-          });
-        } else {
-          // 否则弹出通知，提示添加失败
-          ElNotification({
-            title: "添加失败",
-            message: "添加失败",
-            type: "error",
-          });
-        }
-      });
+      addTorrents({ urls: url, savepath: value })
+        .then((res) => {
+          // 如果返回结果的状态码为200，则弹出通知，提示添加成功
+          if (res.code === 200) {
+            ElNotification({
+              title: "添加成功",
+              message: "添加成功",
+              type: "success",
+            });
+          }
+        })
+        .catch(() => {});
     })
     .catch(() => {
       // 如果用户取消添加，则打印取消添加

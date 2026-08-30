@@ -95,12 +95,9 @@ async function fetchCalendar() {
     const res = await bangumiProxy("calendar", { params: { useMirror: getUseMirror() } });
     if (res.code === 200) {
       calendarData.value = res.data;
-    } else {
-      console.error("获取时间表失败:", res.msg);
-      calendarData.value = [];
     }
-  } catch (err) {
-    console.error("获取时间表失败:", err);
+  } catch {
+    // 错误已由 request 统一提示
     calendarData.value = [];
   } finally {
     loading.value = false;

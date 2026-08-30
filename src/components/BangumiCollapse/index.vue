@@ -44,7 +44,7 @@
   </div>
 </template>
 <script>
-import { aiSubtitle } from "@/api/yzrServer";
+import { aiSubtitle, bangumiList } from "@/api/yzrServer";
 export default {
   data() {
     return {
@@ -119,10 +119,9 @@ export default {
       this.bangumiTitle = e.Title;
       
       try {
-        const res = await fetch(`/yzr/bangumiList?params=${e}`);
-        const data = await res.json();
-        console.log("返回的集数", data);
-        this.bangumiList = data.Episodes;
+        const res = await bangumiList({ params: e });
+        console.log("返回的集数", res);
+        this.bangumiList = (res && res.Episodes) || [];
         // console.log(this.bangumiList);
         this.bangumiList.forEach((element, index) => {
           if (element.LocalMatchedFiles.length !== 0) {
@@ -133,12 +132,8 @@ export default {
         this.$nextTick(() => {
           this.updateUnwatchedColors();
         });
-      } catch (err) {
-        ElNotification({
-          title: "获取番剧集数失败",
-          message: err,
-          type: "error",
-        });
+      } catch {
+        // 错误已由 request 统一提示
       }
     },
     isSelected(e) {
@@ -170,13 +165,7 @@ export default {
                 type: "success",
               });
             })
-            .catch((err) => {
-              ElNotification({
-                title: "获取字幕失败",
-                message: err,
-                type: "error",
-              });
-            });
+            .catch(() => {});
         })
         .catch(() => {
           ElMessage({

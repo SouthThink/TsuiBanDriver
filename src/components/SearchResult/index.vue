@@ -96,13 +96,9 @@ const addSearchRss = () => {
     .then((res) => {
       if (res.code === 200) {
         ElNotification({ title: translate("提示"), message: translate("添加成功"), type: "success" })
-      } else {
-        ElNotification({ title: translate("提示"), message: translate("添加失败"), type: "error" })
       }
     })
-    .catch((err) => {
-      ElNotification({ title: translate("添加失败"), message: err, type: "error" })
-    })
+    .catch(() => {})
 }
 </script>
 

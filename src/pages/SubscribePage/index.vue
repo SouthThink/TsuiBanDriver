@@ -45,28 +45,15 @@ const getRssList = () => {
   loading.value = true;
   getRssItems({ withData: true })
     .then((res) => {
-      loading.value = false;
-      if (res.code === 200) {
-        rssData.value = res.data;
-      } else {
-        ElNotification({
-          title: translate("订阅列表请求失败"),
-          message: translate("请检查网络连接"),
-          type: "warning",
-        });
-        clearInterval(timer.value);
-        timer.value = null;
-      }
+      rssData.value = res.data;
     })
-    .catch((err) => {
-      loading.value = false;
-      ElNotification({
-        title: translate("订阅列表请求错误"),
-        message: err,
-        type: "error",
-      });
+    .catch(() => {
+      // 错误已由 request 统一提示
       clearInterval(timer.value);
       timer.value = null;
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -87,43 +74,38 @@ const deleteRss = (row) => {
         message: row.title,
         type: "info",
       });
-      removeItem({ path: row.title }).then((res) => {
-        if (res.code === 200) {
-          ElNotification({
-            title: translate("提示"),
-            message: translate("删除成功"),
-            type: "success",
-          });
-          getRssList();
-        } else {
-          ElNotification({
-            title: translate("提示"),
-            message: translate("删除失败"),
-            type: "error",
-          });
-        }
-      });
+      removeItem({ path: row.title })
+        .then((res) => {
+          if (res.code === 200) {
+            ElNotification({
+              title: translate("提示"),
+              message: translate("删除成功"),
+              type: "success",
+            });
+            getRssList();
+          }
+        })
+        .catch(() => {});
     })
     .catch(() => {});
 };
 
 const refresh = (row) => {
   row.isLoading = true;
-  refreshItem({ itemPath: row.title }).then((res) => {
-    if (res.code === 200) {
-      ElNotification({
-        title: translate("正在刷新"),
-        message: row.title,
-        type: "info",
-      });
-    } else {
-      ElNotification({
-        title: translate("提示"),
-        message: translate("刷新失败"),
-        type: "error",
-      });
-    }
-  });
+  refreshItem({ itemPath: row.title })
+    .then((res) => {
+      if (res.code === 200) {
+        ElNotification({
+          title: translate("正在刷新"),
+          message: row.title,
+          type: "info",
+        });
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      row.isLoading = false;
+    });
 };
 
 const startRefreshRssList = () => {
@@ -132,7 +114,7 @@ const startRefreshRssList = () => {
 
 const updateAll = () => {
   Object.keys(rssData.value).forEach((key) => {
-    refreshItem({ itemPath: key }).then(() => {});
+    refreshItem({ itemPath: key }).catch(() => {});
   });
   getRssList();
 };
@@ -143,22 +125,18 @@ const reName = (oldName, newName) => {
     message: oldName,
     type: "info",
   });
-  moveItem({ itemPath: oldName, destPath: newName }).then((res) => {
-    if (res.code === 200) {
-      ElNotification({
-        title: translate("提示"),
-        message: translate("重命名成功"),
-        type: "success",
-      });
-      getRssList();
-    } else {
-      ElNotification({
-        title: translate("提示"),
-        message: translate("重命名失败"),
-        type: "error",
-      });
-    }
-  });
+  moveItem({ itemPath: oldName, destPath: newName })
+    .then((res) => {
+      if (res.code === 200) {
+        ElNotification({
+          title: translate("提示"),
+          message: translate("重命名成功"),
+          type: "success",
+        });
+        getRssList();
+      }
+    })
+    .catch(() => {});
 };
 
 const createRss = () => {
@@ -174,22 +152,18 @@ const createRss = () => {
         message: value,
         type: "info",
       });
-      addFeed({ url: value, path: "" }).then((res) => {
-        if (res.code === 200) {
-          ElNotification({
-            title: translate("提示"),
-            message: translate("添加成功"),
-            type: "success",
-          });
-          getRssList();
-        } else {
-          ElNotification({
-            title: translate("提示"),
-            message: translate("添加失败"),
-            type: "error",
-          });
-        }
-      });
+      addFeed({ url: value, path: "" })
+        .then((res) => {
+          if (res.code === 200) {
+            ElNotification({
+              title: translate("提示"),
+              message: translate("添加成功"),
+              type: "success",
+            });
+            getRssList();
+          }
+        })
+        .catch(() => {});
     })
     .catch(() => {});
 };
@@ -197,7 +171,7 @@ const createRss = () => {
 const makeRead = (type, row) => {
   // type: '' 表示全部已读，对象表示单个文章
   const articleId = !type ? undefined : (typeof type === 'object' ? type.title : type);
-  markAsRead({ itemPath: row.title, articleId });
+  markAsRead({ itemPath: row.title, articleId }).catch(() => {});
 };
 
 const openDownloadMsgBox = () => {

@@ -153,8 +153,8 @@ const loadConfig = async () => {
       // 获取版本信息
       await loadVersions();
     }
-  } catch (error) {
-    console.error('加载配置失败:', error);
+  } catch {
+    // 错误已由 request 统一提示
   }
 };
 
@@ -173,8 +173,8 @@ const loadVersions = async () => {
         ddpInfo.value.version = res.data.dandanPlay;
       }
     }
-  } catch (error) {
-    console.error('加载版本信息失败:', error);
+  } catch {
+    // 错误已由 request 统一提示
   }
 };
 
@@ -203,20 +203,15 @@ const saveQBConfig = async () => {
   
   savingQB.value = true;
   try {
-    // 先测试连接和账号密码
-    const testRes = await testBackendConnection({
+    // 先测试连接和账号密码（失败会由 request 统一提示并 reject）
+    await testBackendConnection({
       type: 'qBittorrent',
       host: tempQBHost.value,
       port: tempQBPort.value,
       username: tempQBUsername.value,
       password: tempQBPassword.value
     });
-    
-    if (testRes.code !== 200) {
-      ElMessage.error(testRes.msg || translate('连接测试失败'));
-      return;
-    }
-    
+
     // 连接和账号密码验证成功后保存配置
     const res = await saveUrlConfig({
       qBittorrent_host: tempQBHost.value,
@@ -226,27 +221,23 @@ const saveQBConfig = async () => {
       dandanPlay_host: ddpInfo.value.host,
       dandanPlay_port: ddpInfo.value.port,
     });
-    
+
     if (res.code === 200) {
       // 保存成功，立即恢复按钮状态
       savingQB.value = false;
-      
+
       qbInfo.value.host = tempQBHost.value;
       qbInfo.value.port = tempQBPort.value;
       qbInfo.value.username = tempQBUsername.value;
       qbInfo.value.password = tempQBPassword.value;
       qbDialogVisible.value = false;
       ElMessage.success(translate('保存成功'));
-      
+
       // 重新加载版本信息
       await loadVersions();
-    } else {
-      ElMessage.error(translate('保存失败'));
     }
-  } catch (error) {
-    const errorMsg = error.response?.data?.msg || error.message || translate('操作失败');
-    ElMessage.error(errorMsg);
-    console.error('保存失败:', error);
+  } catch {
+    // 错误已由 request 统一提示
   } finally {
     savingQB.value = false;
   }
@@ -261,18 +252,13 @@ const saveDDPConfig = async () => {
   
   savingDDP.value = true;
   try {
-    // 先测试连接
-    const testRes = await testBackendConnection({
+    // 先测试连接（失败会由 request 统一提示并 reject）
+    await testBackendConnection({
       type: 'dandanPlay',
       host: tempDDPHost.value,
       port: tempDDPPort.value
     });
-    
-    if (testRes.code !== 200) {
-      ElMessage.error(testRes.msg || translate('连接测试失败'));
-      return;
-    }
-    
+
     // 连接成功后保存配置
     const res = await saveUrlConfig({
       qBittorrent_host: qbInfo.value.host,
@@ -282,25 +268,21 @@ const saveDDPConfig = async () => {
       dandanPlay_host: tempDDPHost.value,
       dandanPlay_port: tempDDPPort.value,
     });
-    
+
     if (res.code === 200) {
       // 保存成功，立即恢复按钮状态
       savingDDP.value = false;
-      
+
       ddpInfo.value.host = tempDDPHost.value;
       ddpInfo.value.port = tempDDPPort.value;
       ddpDialogVisible.value = false;
       ElMessage.success(translate('保存成功'));
-      
+
       // 重新加载版本信息
       await loadVersions();
-    } else {
-      ElMessage.error(translate('保存失败'));
     }
-  } catch (error) {
-    const errorMsg = error.response?.data?.msg || error.message || translate('操作失败');
-    ElMessage.error(errorMsg);
-    console.error('保存失败:', error);
+  } catch {
+    // 错误已由 request 统一提示
   } finally {
     savingDDP.value = false;
   }

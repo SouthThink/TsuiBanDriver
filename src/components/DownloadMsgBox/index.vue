@@ -238,21 +238,9 @@ const getSubscribeList = () => {
         Object.keys(res.data).forEach((key) => {
           SubscribeList.value.push({ ...res.data[key], title: key });
         });
-      } else {
-        ElNotification({
-          title: "订阅列表请求失败",
-          message: "返回数据为空或格式错误",
-          type: "warning",
-        });
       }
     })
-    .catch((err) => {
-      ElNotification({
-        title: "订阅列表请求错误",
-        message: err,
-        type: "error",
-      });
-    });
+    .catch(() => {});
 };
 
 const handleSelectionChange = (val) => {
@@ -323,21 +311,9 @@ const handleMenuSelect = (index) => {
               type: "success",
             });
             getRules();
-          } else {
-            ElNotification({
-              title: "新建失败",
-              message: res.code,
-              type: "error",
-            });
           }
         })
-        .catch((err) => {
-          ElNotification({
-            title: "新建失败",
-            message: err,
-            type: "error",
-          });
-        });
+        .catch(() => {});
     });
   }
 };
@@ -353,8 +329,7 @@ const getRules = () => {
     }
     // console.log(ruleNameList.value);
     // console.log(res.data);
-  }).catch((err) => {
-    console.error('获取规则失败:', err);
+  }).catch(() => {
     ruleNameList.value = [];
     ruleInfo.value = {};
   });
@@ -369,15 +344,12 @@ const getMatchingArticles = () => {
       selectRssList.value.forEach((item) => {
         matchingArticlesList.value.push(...res.data[item.title]);
       });
-      matchingArticlesListLoading.value = false;
     })
-    .catch((err) => {
+    .catch(() => {
+      // 错误已由 request 统一提示
+    })
+    .finally(() => {
       matchingArticlesListLoading.value = false;
-      // ElNotification({
-      //   title: "匹配文章请求错误",
-      //   message: err,
-      //   type: "error",
-      // });
     });
 };
 
@@ -392,22 +364,18 @@ const removeRuleBtn = () => {
       message: "请稍后",
       type: "info",
     });
-    removeRule({ ruleName: selectRuleName.value }).then((res) => {
-      if (res.code === 200) {
-        ElNotification({
-          title: "删除成功",
-          message: "请前往规则管理页面查看",
-          type: "success",
-        });
-        getRules();
-      } else {
-        ElNotification({
-          title: "删除失败",
-          message: res.code,
-          type: "error",
-        });
-      }
-    });
+    removeRule({ ruleName: selectRuleName.value })
+      .then((res) => {
+        if (res.code === 200) {
+          ElNotification({
+            title: "删除成功",
+            message: "请前往规则管理页面查看",
+            type: "success",
+          });
+          getRules();
+        }
+      })
+      .catch(() => {});
   });
 };
 
@@ -430,21 +398,9 @@ const saveRuleBtn = () => {
         });
         getRules();
         getMatchingArticles();
-      } else {
-        ElNotification({
-          title: "保存失败",
-          message: res.code,
-          type: "error",
-        });
       }
     })
-    .catch((err) => {
-      ElNotification({
-        title: "保存失败",
-        message: err,
-        type: "error",
-      });
-    });
+    .catch(() => {});
 };
 
 const select = (key) => {

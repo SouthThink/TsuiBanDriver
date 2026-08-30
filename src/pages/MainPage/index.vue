@@ -93,15 +93,16 @@ import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
 import { translate } from '@/utils/translate'
+import { searchBangumi } from '@/api/yzrServer'
 export default {
   data() {
     return {
       tagList: [],
       videoList: {},
-      allVideoList: [],
       loading: true,
       cover: "",
       search: "",
+      searchTimer: null,
       size: "100%",
       navType: [
         { name: "最近播放", type: "lastplay" },
@@ -133,43 +134,48 @@ export default {
     translate,
     async getVideoList(e) {
       this.loading = true;
-      this.videoList = {};
-      this.tagList = [];
-      
+      this.nav = e;
+      clearTimeout(this.searchTimer);
       try {
-        const res = await fetch(`/yzr/bangumi?params=${e}`);
-        const data = await res.json();
-        this.allVideoList = data;
-        this.bangumiSearch("");
-        this.loading = false;
-        // console.log(data, "番剧列表");
-      } catch (err) {
-        ElNotification({
-          title: "获取番剧列表失败",
-          message: err,
-          type: "error",
-        });
-        console.error(err);
+        const res = await searchBangumi({ params: e, keyword: "" });
+        this.groupByGroupName((res && res.data) || []);
+      } catch {
+        // 错误已由 request 统一提示
+      } finally {
         this.loading = false;
       }
     },
     bangumiSearch(e) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(() => {
+        this.fetchSearch(e);
+      }, 300);
+    },
+    async fetchSearch(keyword) {
+      this.loading = true;
+      try {
+        const res = await searchBangumi({ params: this.nav, keyword });
+        this.groupByGroupName((res && res.data) || []);
+      } catch {
+        // 错误已由 request 统一提示
+      } finally {
+        this.loading = false;
+      }
+    },
+    groupByGroupName(data) {
       this.videoList = {};
       this.tagList = [];
-      this.allVideoList.forEach((element) => {
-        //按照element.GroupName进行分类
-        if (element.Title.toLowerCase().indexOf(e.toLowerCase()) != -1) {
-          if (!this.videoList[element.GroupName]) {
-            this.videoList[element.GroupName] = [];
-            this.tagList.push(element.GroupName);
-          }
-          this.videoList[element.GroupName].push(element);
+      data.forEach((element) => {
+        // 按照 element.GroupName 进行分类
+        if (!this.videoList[element.GroupName]) {
+          this.videoList[element.GroupName] = [];
+          this.tagList.push(element.GroupName);
         }
-        if (this.nav == "name") {
-          this.tagList.sort();
-        }
+        this.videoList[element.GroupName].push(element);
       });
-      // console.log(this.videoList);
+      if (this.nav == "name") {
+        this.tagList.sort();
+      }
     },
     showDrawer(e) {
       this.showBangumi = true;

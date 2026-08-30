@@ -86,7 +86,7 @@ const getModuelList = async () => {
     moduelList.value = res.valid_models;
     device.value = res.default_device;
     deviceList.value = res.valid_devices;
-  });
+  }).catch(() => {});
 };
 
 const loadChatConfig = async () => {
@@ -96,7 +96,7 @@ const loadChatConfig = async () => {
       chatBaseUrl.value = res.data.base_url || "";
       chatModel.value = res.data.model || "";
     }
-  });
+  }).catch(() => {});
 };
 
 getModuelList();
@@ -106,7 +106,7 @@ const changeAiConfig = (key) => {
   addEditAiConfig({
     ai_config_key: key,
     ai_config_value: key == "default_model" ? moduel.value : device.value,
-  }).then((res) => {});
+  }).then((res) => {}).catch(() => {});
 };
 
 const saveChatConfig = () => {
@@ -114,7 +114,7 @@ const saveChatConfig = () => {
     api_key: chatApiKey.value,
     base_url: chatBaseUrl.value,
     model: chatModel.value,
-  });
+  }).catch(() => {});
 };
 </script>
 <style scoped>

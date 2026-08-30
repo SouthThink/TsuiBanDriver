@@ -402,21 +402,9 @@ const batchDelete = () => {
           });
           clearSelection();
           rid.value = 0;
-        } else {
-          ElNotification({
-            title: translate("失败"),
-            message: res.msg,
-            type: "error",
-          });
         }
       })
-      .catch((err) => {
-        ElNotification({
-          title: translate("失败"),
-          message: err,
-          type: "error",
-        });
-      });
+      .catch(() => {});
   }).catch(() => {});
 };
 
@@ -451,21 +439,9 @@ const batchSetLocation = () => {
           });
           clearSelection();
           rid.value = 0;
-        } else {
-          ElNotification({
-            title: translate("移动失败"),
-            message: res.msg,
-            type: "error",
-          });
         }
       })
-      .catch((err) => {
-        ElNotification({
-          title: translate("移动失败"),
-          message: err,
-          type: "error",
-        });
-      });
+      .catch(() => {});
   }).catch(() => {});
 };
 
@@ -475,7 +451,6 @@ const getDownloadListBtn = () => {
   rid2.value = rid.value;
   getDownloadList({ rid: rid.value })
     .then((res) => {
-      loading.value = false;
       if (rid.value === 0) {
         resData = res.data;
       } else {
@@ -507,15 +482,13 @@ const getDownloadListBtn = () => {
       });
       // console.log(torrents.value);
     })
-    .catch((err) => {
-      loading.value = false;
-      ElNotification({
-        title: translate("下载列表请求错误"),
-        message: err,
-        type: "error",
-      });
+    .catch(() => {
+      // 错误已由 request 统一提示
       clearInterval(timer.value);
       timer.value = null; // 清除定时器
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -536,21 +509,9 @@ const removeTorrent = async (id) => {
             type: "success",
           });
           rid.value = 0;
-        } else {
-          ElNotification({
-            title: "失败",
-            message: res.msg,
-            type: "error",
-          });
         }
       })
-      .catch((err) => {
-        ElNotification({
-          title: "失败",
-          message: err,
-          type: "error",
-        });
-      });
+      .catch(() => {});
   });
   // const res = await deleteTorrents(id);
   // if (res.code === 200) {
@@ -583,21 +544,9 @@ const setLocationBtn = (row) => {
               message: translate("修改成功"),
               type: "success",
             });
-          } else {
-            ElNotification({
-              title: translate("移动失败"),
-              message: res.msg,
-              type: "error",
-            });
           }
         })
-        .catch((err) => {
-          ElNotification({
-            title: translate("移动失败"),
-            message: err,
-            type: "error",
-          });
-        });
+        .catch(() => {});
     })
     .catch((err) => {
       console.log(err);

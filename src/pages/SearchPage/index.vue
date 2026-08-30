@@ -82,41 +82,20 @@ const searchAllInfoBtn = () => {
     name: input.value,
   })
     .then((res) => {
-      if (res.code == 200) {
-        let rss = JSON.parse(res.data.rss).rss.channel;
-        let items = rss.item;
-        if (!Array.isArray(items)) {
-          items = [items];
-        }
-        searchData.value = {
-          bangumiItem: res.data.bangumiItem,
-          rssItems: items,
-          rssLink: rss.link || '',
-        };
-        loading.value = false;
-      } else if (res.code == 404) {
-        loading.value = false;
-        ElNotification({
-          title: translate("搜索失败"),
-          message: translate("未找到相关番剧"),
-          type: "warning",
-        });
-      } else {
-        loading.value = false;
-        ElNotification({
-          title: translate("搜索失败"),
-          message: translate("请检查网络连接"),
-          type: "error",
-        });
+      let rss = JSON.parse(res.data.rss).rss.channel;
+      let items = rss.item;
+      if (!Array.isArray(items)) {
+        items = [items];
       }
+      searchData.value = {
+        bangumiItem: res.data.bangumiItem,
+        rssItems: items,
+        rssLink: rss.link || '',
+      };
     })
-    .catch((err) => {
+    .catch(() => {})
+    .finally(() => {
       loading.value = false;
-      ElNotification({
-        title: translate("搜索失败"),
-        message: err,
-        type: "error",
-      });
     });
 };
 
@@ -130,25 +109,11 @@ const getSubgroupInfoBtn = (e) => {
     bangumiId: bangumiId.value,
   })
     .then((res) => {
-      subtitleGroupListLoading.value = false;
-      if (res.code === 200) {
-        console.log(res);
-        subtitleGroupList.value = res.data;
-      } else {
-        ElNotification({
-          title: translate("获取字幕组失败"),
-          message: translate("请检查网络连接"),
-          type: "error",
-        });
-      }
+      subtitleGroupList.value = res.data;
     })
-    .catch((err) => {
+    .catch(() => {})
+    .finally(() => {
       subtitleGroupListLoading.value = false;
-      ElNotification({
-        title: translate("获取字幕组失败"),
-        message: err,
-        type: "error",
-      });
     });
 };
 
@@ -173,21 +138,9 @@ const getRssLinkBtn = (e) => {
           message: translate("请前往订阅列表查看"),
           type: "success",
         });
-      } else {
-        ElNotification({
-          title: translate("订阅失败"),
-          message: translate("请检查网络连接"),
-          type: "warning",
-        });
       }
     })
-    .catch((err) => {
-      ElNotification({
-        title: translate("订阅失败"),
-        message: err,
-        type: "warning",
-      });
-    });
+    .catch(() => {});
 };
 </script>
 <style scoped>

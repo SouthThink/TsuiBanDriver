@@ -31,11 +31,13 @@ const originList = ref([
 ]);
 const aboutList = ref(JSON.parse(localStorage.getItem("aboutList")));
 
-allVersion().then((res) => {
-  originList.value = originList.value.concat(res.data.app_info);
-  aboutList.value = originList.value;
-  localStorage.setItem("aboutList", JSON.stringify(originList.value));
-});
+allVersion()
+  .then((res) => {
+    originList.value = originList.value.concat(res.data.app_info);
+    aboutList.value = originList.value;
+    localStorage.setItem("aboutList", JSON.stringify(originList.value));
+  })
+  .catch(() => {});
 
 const openHref = (href) => {
   if (!href) return;

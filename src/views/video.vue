@@ -110,8 +110,8 @@ export default {
         if (res.code === 200) {
           this.subtitleList = res.data;
         }
-      } catch (error) {
-        console.error("获取字幕列表失败", error);
+      } catch {
+        // 错误已由 request 统一提示
       }
     },
     async handleSubtitleClick(subtitle) {
@@ -123,12 +123,9 @@ export default {
         });
         if (res.data === true) {
           location.reload();
-        } else {
-          ElMessage.error("字幕设置失败");
         }
-      } catch (error) {
-        console.error("设置字幕失败", error);
-        ElMessage.error("字幕设置失败");
+      } catch {
+        // 错误已由 request 统一提示
       }
     },
   },
