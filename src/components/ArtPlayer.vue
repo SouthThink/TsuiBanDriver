@@ -286,7 +286,7 @@ export default {
     
     async getVideoUrls(videoId) {
       try {
-        const streamRes = await fetch(`/yzr/stream?videoId=${videoId}`);
+        const streamRes = await fetch(`/yzr/stream?videoId=${encodeURIComponent(videoId)}`);
         
         console.log('[getVideoUrls] Stream响应状态:', streamRes.status);
         
@@ -298,6 +298,8 @@ export default {
         const streamData = await streamRes.json();
         console.log('[getVideoUrls] Stream URL:', streamData.url);
         
+        // 后端返回相对地址（统一走 /yzr 代理），浏览器会自动补上当前访问的 host，
+        // 因此局域网与外网访问都能正常播放
         return {
           streamUrl: streamData.url,
           posterUrl: `/api/api/v1/image/id/${videoId}`
