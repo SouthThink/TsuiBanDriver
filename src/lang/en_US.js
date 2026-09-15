@@ -237,4 +237,11 @@ export default {
   冬季: "Winter",
   新番: " Anime",
   全选: "Select All",
+  密码保护: "Password Protection",
+  访问密码: "Access Password",
+  请输入访问密码: "Please enter the access password",
+  密码不能为空: "Password cannot be empty",
+  密码错误: "Wrong password",
+  登录: "Login",
+  登录成功: "Login successful",
 };

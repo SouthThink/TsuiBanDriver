@@ -49,6 +49,12 @@
     </el-card>
     <el-card class="setting-card">
       <template #header>
+        <el-text size="large">{{translate("密码保护")}}</el-text>
+      </template>
+      <auth-setting />
+    </el-card>
+    <el-card class="setting-card">
+      <template #header>
         <el-text size="large">{{translate("关于")}}</el-text>
       </template>
       <about/>
@@ -66,6 +72,7 @@ import danmakuSetting from "./components/danmakuSetting.vue";
 import timeTableSetting from "./components/timeTableSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
 import backendSetting from "./components/backendSetting.vue";
+import authSetting from "./components/authSetting.vue";
 import about from "./components/about.vue";
 import aiSetting from "./components/aiSetting.vue";
 import { translate } from '@/utils/translate'

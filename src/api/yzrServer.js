@@ -334,3 +334,33 @@ export function bangumiList(params) {
     params,
   });
 }
+
+export function getAuthStatus() {
+  return request(BASE_URL,{
+    url: "/authStatus",
+    method: "get",
+  });
+}
+
+export function authLogin(data) {
+  return request(BASE_URL,{
+    url: "/authLogin",
+    method: "post",
+    data,
+  });
+}
+
+export function getAuthConfig() {
+  return request(BASE_URL,{
+    url: "/getAuthConfig",
+    method: "get",
+  });
+}
+
+export function saveAuthConfig(data) {
+  return request(BASE_URL,{
+    url: "/saveAuthConfig",
+    method: "post",
+    data,
+  });
+}

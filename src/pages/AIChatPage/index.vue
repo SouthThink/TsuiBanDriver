@@ -344,7 +344,7 @@ const sendMessage = async () => {
 }
 
 .chat-messages {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
   padding: 20px;
   display: flex;
