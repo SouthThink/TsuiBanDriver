@@ -43,7 +43,8 @@
   </div>
 </template>
 <script setup>
-import { ref, inject, watch } from "vue";
+import { ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import SearchResult from "@/components/SearchResult/index.vue";
 import {
   searchAllInfo,
@@ -55,19 +56,8 @@ import { ElNotification } from "element-plus";
 import { setSize } from "@/utils/utils";
 import { translate } from "@/utils/translate";
 
+const route = useRoute();
 const input = ref("");
-const searchQuery = inject("searchQuery");
-
-watch(searchQuery, (val) => {
-  if (val) {
-    input.value = val;
-    searchQuery.value = "";
-    const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
-    if (settings.clickAction === "searchAndGo") {
-      searchAllInfoBtn();
-    }
-  }
-});
 
 const searchData = ref({ bangumiItem: [], rssItems: [], rssLink: '' });
 const loading = ref(false);
@@ -98,6 +88,20 @@ const searchAllInfoBtn = () => {
       loading.value = false;
     });
 };
+
+// 从时间表跳转过来时通过地址栏参数带入番剧名，按时间表设置决定是否直接搜索
+watch(
+  () => route.query.q,
+  (val) => {
+    if (!val) return;
+    input.value = val;
+    const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
+    if (settings.clickAction === "searchAndGo") {
+      searchAllInfoBtn();
+    }
+  },
+  { immediate: true }
+);
 
 const getSubgroupInfoBtn = (e) => {
   subtitleGroupList.value = [];

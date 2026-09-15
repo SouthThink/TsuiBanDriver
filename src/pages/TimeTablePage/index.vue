@@ -42,12 +42,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { translate, getCurrentLang } from "@/utils/translate";
 import { bangumiProxy } from "@/api/yzrServer";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
 
-const emit = defineEmits(["go-search"]);
+const router = useRouter();
 
 function getUseMirror() {
   const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
@@ -122,7 +123,7 @@ function getTitle(item) {
 
 function toSearch(item) {
   const name = getTitle(item);
-  emit("go-search", name);
+  router.push({ name: "search", query: { q: name } });
 }
 </script>
 
