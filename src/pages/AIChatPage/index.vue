@@ -100,30 +100,44 @@
     </div>
 
     <div class="chat-input-area">
-      <el-input
-        v-model="inputText"
-        :placeholder="translate('输入消息')"
-        class="chat-input"
-        @keydown.enter="sendMessage"
-        :disabled="loading"
-        clearable
-      >
-        <template #append>
+      <div class="chat-input-box">
+        <el-input
+          v-model="inputText"
+          class="chat-input"
+          type="textarea"
+          resize="none"
+          :autosize="{ minRows: 1, maxRows: 6 }"
+          :placeholder="translate('输入消息')"
+          @keydown.enter="handleEnterKey"
+        />
+        <div class="chat-input-actions">
+          <!-- 工具栏预留位置：以后在此加入联网搜索、深度思考等工具开关 -->
+          <div class="chat-input-toolbar"></div>
           <el-button
-            :icon="Promotion"
-            @click="sendMessage"
-            :disabled="!inputText.trim() || loading"
+            v-if="loading"
+            type="danger"
+            :icon="VideoPause"
+            @click="stopGeneration"
+          >
+            {{ translate("停止") }}
+          </el-button>
+          <el-button
+            v-else
             type="primary"
+            circle
+            :icon="Promotion"
+            :disabled="!inputText.trim()"
+            @click="sendMessage"
           />
-        </template>
-      </el-input>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, nextTick, markRaw } from 'vue'
-import { ChatDotRound, User, Cpu, Promotion, Tools, Finished } from '@element-plus/icons-vue'
+import { ChatDotRound, User, Cpu, Promotion, Tools, Finished, VideoPause } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { translate } from '@/utils/translate'
 import SearchResult from '@/components/SearchResult/index.vue'
@@ -145,7 +159,7 @@ const streamingItems = ref([])
 const messageContainer = ref(null)
 let abortController = null
 
-const hasAnyContent = computed(() => messages.value.length === 0 && streamingItems.value.length === 0)
+const hasAnyContent = computed(() => messages.value.length > 0 || streamingItems.value.length > 0)
 
 const renderMarkdown = (text) => {
   if (!text) return ''
@@ -160,11 +174,24 @@ const scrollToBottom = () => {
   })
 }
 
+const stopGeneration = () => {
+  if (abortController) {
+    abortController.abort()
+  }
+}
+
+// 回车发送，Shift+回车换行；输入法候选词确认时不发送
+const handleEnterKey = (event) => {
+  if (event.isComposing || event.shiftKey) return
+  event.preventDefault()
+  sendMessage()
+}
+
 const sendMessage = async () => {
   const text = inputText.value.trim()
   if (!text || loading.value) return
 
-  messages.value.push({ role: 'user', content: text })
+  messages.value.push({ role: 'user', content: text, time: Date.now() })
   inputText.value = ''
   scrollToBottom()
 
@@ -306,7 +333,10 @@ const sendMessage = async () => {
       })
     }
   } catch (e) {
-    if (e.name === 'AbortError') return
+    if (e.name === 'AbortError') {
+      streamingItems.value.push({ type: 'text', content: translate('（已中断）') })
+      return
+    }
     streamingItems.value.push({
       type: 'text',
       content: translate('请求失败请检查后端服务'),
@@ -346,7 +376,7 @@ const sendMessage = async () => {
 .chat-messages {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 20px;
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -564,13 +594,116 @@ const sendMessage = async () => {
   }
 }
 
+/* 输入区不做分隔线，整体作为一张卡片悬浮在底部；左右与底部都不额外留白，只保留外层布局的边距 */
 .chat-input-area {
-  padding: 16px 20px;
-  border-top: 1px solid var(--el-border-color-light);
-  background: var(--el-bg-color);
+  padding: 12px 0 0;
 }
 
-.chat-input {
-  --el-input-border-radius: 20px;
+/* QQ 式无框多行输入：多行文本域无框，卡片边框与圆角交给外层容器 */
+.chat-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.chat-input-box:focus-within {
+  border-color: var(--el-color-primary);
+}
+
+.chat-input :deep(.el-textarea__inner) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.chat-input :deep(.el-textarea__inner:focus) {
+  box-shadow: none;
+}
+
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 工具栏预留区：放入工具开关后自动占满左侧 */
+.chat-input-toolbar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+
+/* 窄屏减少左右留白与头像占位，让对话内容更宽更好读 */
+@media (max-width: 768px) {
+  .chat-messages {
+    padding: 10px 0;
+    gap: 10px;
+  }
+
+  .message-item {
+    max-width: 96%;
+    gap: 6px;
+  }
+
+  .message-avatar :deep(.el-avatar) {
+    width: 26px;
+    height: 26px;
+  }
+
+  .message-content {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .message-text {
+    font-size: 14px;
+  }
+
+  .markdown-body :deep(pre) {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .markdown-body :deep(table) {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .markdown-body :deep(th),
+  .markdown-body :deep(td) {
+    padding: 4px 8px;
+  }
+
+  .tool-card-body {
+    padding: 6px 8px 8px;
+    max-height: 160px;
+  }
+
+  .chat-input-area {
+    padding: 8px 0 0;
+  }
+
+  .chat-input-box {
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .chat-input :deep(.el-textarea__inner) {
+    font-size: 14px;
+  }
+
+  .chat-input-toolbar {
+    min-height: 30px;
+  }
 }
 </style>

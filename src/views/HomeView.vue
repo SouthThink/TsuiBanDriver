@@ -23,6 +23,9 @@
         <RouterView />
       </div>
     </div>
+
+    <!-- 窄屏遮罩，点击关闭抽屉 -->
+    <div v-if="isNarrow && drawerVisible" class="layout-mask" @click="drawerVisible = false" />
   </div>
 </template>
 <script setup>
@@ -105,6 +108,25 @@ watch(
   min-height: 0;
   overflow: auto;
   padding: 10px;
+}
+
+.layout-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1999;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* 窄屏适配，减少左右留白让内容更宽更好读 */
+@media (max-width: 768px) {
+  .layout-header {
+    height: 44px;
+    padding: 0 6px;
+  }
+
+  .layout-view {
+    padding: 6px;
+  }
 }
 </style>
 <style>

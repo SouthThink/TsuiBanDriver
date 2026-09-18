@@ -244,4 +244,6 @@ export default {
   密码错误: "Wrong password",
   登录: "Login",
   登录成功: "Login successful",
+  停止: "Stop",
+  "（已中断）": "(interrupted)",
 };
