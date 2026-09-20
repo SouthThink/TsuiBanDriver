@@ -4,26 +4,18 @@
       <el-image :src="imgUrl" fit="cover" class="bangumi-item-img"> </el-image>
       <div class="bangumi-item-score" v-if="rating !== 0">
         <el-icon><StarFilled /></el-icon>
-        <el-text style="color: white">{{ rating }}</el-text>
+        <el-text>{{ rating }}</el-text>
       </div>
       <div class="bangumi-item-watched" v-if="episodeWatched !== 0">
         <el-icon><Clock /></el-icon>
-        <el-text
-          truncated
-          style="color: white"
-          v-if="episodeWatched != episodeTotal"
-        >
+        <el-text truncated v-if="episodeWatched != episodeTotal">
           {{ translate("已看") + episodeWatched + translate("话") }}
         </el-text>
-        <el-text style="color: white" v-else>{{
-          translate("已看到最新")
-        }}</el-text>
+        <el-text v-else>{{ translate("已看到最新") }}</el-text>
       </div>
     </div>
     <div class="bangumi-item-info">
-      <el-text line-clamp="2" class="bangumi-item-title">
-        {{ title }}
-      </el-text>
+      <div class="bangumi-item-title">{{ title }}</div>
     </div>
   </div>
 </template>

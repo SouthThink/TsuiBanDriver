@@ -28,18 +28,17 @@
       <template #template>
         <div class="bangumi- card">
           <el-skeleton-item class="bangumi-card-title" variant="h3" />
-          <el-row :gutter="24">
-            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n" 
-            style="padding-left: 5px;padding-right: 5px;">
+          <el-row :gutter="12">
+            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n">
               <div class="bangumi-item">
-                <el-skeleton-item
-                  variant="image"
-                  style="height: 200px; margin: auto"
-                  class="bangumi-item-img"
-                />
+                <div class="bangumi-item-cover">
+                  <el-skeleton-item variant="image" class="bangumi-item-img" />
+                </div>
                 <div class="bangumi-item-info">
-                  <el-skeleton-item variant="text" class="bangumi-item-title" />
-                  <el-skeleton-item variant="text" class="bangumi-item-title" />
+                  <div class="bangumi-item-title-skeleton">
+                    <el-skeleton-item variant="text" />
+                    <el-skeleton-item variant="text" />
+                  </div>
                 </div>
               </div>
             </el-col>
@@ -249,5 +248,12 @@ export default {
 }
 .bangumi-drawer {
   width: auto;
+}
+/* 骨架屏标题块：高度与真实卡片标题一致，避免加载完成时跳动 */
+.bangumi-item-title-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 40px;
 }
 </style>

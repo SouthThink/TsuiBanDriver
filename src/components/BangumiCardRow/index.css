@@ -1,61 +1,107 @@
 .bangumi-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-radius: 10px;
-  background-color: var(--el-button-bg-color,var(--el-fill-color-blank));
-  box-shadow: 0 0 10px rgba(128, 128, 128, 0.3);
+  position: relative;
   margin-top: 10px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .bangumi-item:hover {
-  /* 放大且加阴影 */
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(70, 70, 70, 0.3);
-}
-.bangumi-item-cover {
-  padding: 0px;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  border-radius: 10px;
-  position: relative;
-}
-.bangumi-item-img {
-  border-radius: 10px;
-  width: 100%;
-  height: 100%;
-}
-.bangumi-item-score {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  color: white;
-  padding: 0.25rem;
-  border-radius: 10px 0 0 0;
-  display: flex;
-  align-items: center;
-  color: white;
-}
-.bangumi-item-watched {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  color: white;
-  padding: 0.25rem;
-  border-radius: 0 0 0 10px;
-  display: flex;
-  align-items: center;
-  color: white;
+  /* 轻微上浮代替放大，避免相邻卡片互相遮挡 */
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
 }
 
-.bangumi-item-info {
-  padding: 0.25rem;
-}
-.bangumi-item-title {
-  height: 50px;
-  font-size: 0.92rem;
+/* 封面 */
+.bangumi-item-cover {
+  position: relative;
+  width: 100%;
+  /* 按海报比例收缩，窄卡片下不会被固定高度压变形 */
+  aspect-ratio: 2 / 3;
+  max-height: 200px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  border-radius: 10px 10px 0 0;
+  background-color: var(--el-fill-color-light);
+}
+/* 底部压暗，保证角标在亮色封面上也清晰 */
+.bangumi-item-cover::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 45%;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+}
+.bangumi-item-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px 10px 0 0;
+  transition: transform 0.3s ease;
+}
+.bangumi-item:hover .bangumi-item-img {
+  transform: scale(1.06);
+}
+
+/* 评分 / 观看进度角标 */
+.bangumi-item-score,
+.bangumi-item-watched {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  font-size: 12px;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.55);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+.bangumi-item-score .el-text,
+.bangumi-item-watched .el-text {
+  font-size: 12px;
+  line-height: 18px;
+  color: #fff;
+}
+.bangumi-item-score {
+  right: 6px;
+  bottom: 6px;
+}
+.bangumi-item-score .el-icon {
+  color: #ffb020;
+}
+.bangumi-item-watched {
+  top: 6px;
+  right: 6px;
+}
+
+/* 标题 */
+.bangumi-item-info {
+  padding: 6px 8px 8px;
+}
+.bangumi-item-info .bangumi-item-title {
+  /* 用普通元素而非 el-text：el-text 自带 align-self: center，
+     与下面实现两行截断的 -webkit-box 组合时，部分内核会把整段文字居中收缩 */
+  width: 100%;
+  /* 盒高等于两行（20px × 2），避免第 3 行残影，同时保证卡片等高 */
+  height: 40px;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--el-text-color-primary);
+  /* 固定两行，超出省略 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   white-space: normal;
   word-break: normal;
+  transition: color 0.25s ease;
+}
+.bangumi-item:hover .bangumi-item-title {
+  color: var(--el-color-primary);
 }

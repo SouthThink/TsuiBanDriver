@@ -7,35 +7,47 @@
       @change="handleChange"
     >
       <el-collapse-item
-        v-for="(item, index) in bangumiList"
-        :key="index"
-        :name="index"
+        v-for="(episode, episodeIndex) in bangumiList"
+        :key="episodeIndex"
+        :name="episodeIndex"
         class="bangumi-collapse-item"
-        disabled
+        :class="{ 'is-playing': isCurrentEpisode(episode) }"
+        :disabled="episode.LocalMatchedFiles.length === 0"
       >
         <template #title>
-          <span
-            class="bangumi-title-text"
-            :class="{ 'unwatched-title': item.AirStatus != '1' }"
-          >
-            {{ item.EpisodeTitle }} {{ formatReadTime(item.AirDate) }} {{ item.AirStatus == '1' ? '已观看' : '未观看' }}
-          </span>
+          <div class="episode-title">
+            <span class="episode-name">{{ episode.EpisodeTitle }}</span>
+            <span class="episode-date">{{ formatReadTime(episode.AirDate) }}</span>
+            <span
+              class="episode-status"
+              :class="episode.AirStatus == '1' ? 'is-watched' : 'is-unwatched'"
+            >
+              {{ episode.AirStatus == "1" ? "已观看" : "未观看" }}
+            </span>
+          </div>
         </template>
-        <div class="bangumi-collapse-item-button">
+        <div class="episode-files">
           <div
-            class="bangumi-collapse-item-button-team"
-            v-for="(item, index) in item.LocalMatchedFiles"
-            :key="index"
+            v-for="(file, fileIndex) in episode.LocalMatchedFiles"
+            :key="fileIndex"
+            class="episode-file"
           >
-            <el-button small text @click="aiSubtitleBtn(item)">
-              <el-icon><More /></el-icon>
+            <el-button
+              class="episode-file-name"
+              :type="isSelected(file)"
+              :title="file.Name"
+              text
+              @click="routeToVideo(file)"
+            >
+              <span class="episode-file-text">{{ file.Name }}</span>
             </el-button>
             <el-button
-              @click="routeToVideo(item)"
+              class="episode-file-more"
               text
-              :type="isSelected(item)"
+              title="AI生成字幕"
+              @click="aiSubtitleBtn(file)"
             >
-              {{ item.Name }}
+              <el-icon><More /></el-icon>
             </el-button>
           </div>
         </div>
@@ -85,6 +97,7 @@ export default {
   methods: {
     //时间格式转换成阅读格式
     formatReadTime(inputDate) {
+      if (!inputDate) return "";
       const date = new Date(inputDate);
 
       const year = date.getFullYear().toString().slice(-2); // 获取年份的后两位
@@ -98,7 +111,7 @@ export default {
     },
     routeToVideo(e) {
       console.log("点击的视频存放在", e.Path);
-      
+
       if (this.openInNewTab) {
         const route = this.$router.resolve({
           name: "video",
@@ -109,7 +122,7 @@ export default {
         this.$emit("videoChange", {
           videoId: e.Id,
           AnimeId: e.AnimeId,
-          title: e.AnimeTitle + " " + e.EpisodeTitle
+          title: e.AnimeTitle + " " + e.EpisodeTitle,
         });
       }
     },
@@ -117,20 +130,17 @@ export default {
       this.bangumiList = [];
       this.activeNames = [];
       this.bangumiTitle = e.Title;
-      
+
       try {
         const res = await bangumiList({ params: e });
         console.log("返回的集数", res);
         this.bangumiList = (res && res.Episodes) || [];
         // console.log(this.bangumiList);
+        // 已有本地文件的剧集默认展开
         this.bangumiList.forEach((element, index) => {
           if (element.LocalMatchedFiles.length !== 0) {
             this.activeNames.push(index);
           }
-        });
-        // 确保在 DOM 更新后设置未观看标题颜色（覆盖可能的样式冲突）
-        this.$nextTick(() => {
-          this.updateUnwatchedColors();
         });
       } catch {
         // 错误已由 request 统一提示
@@ -144,6 +154,10 @@ export default {
       } else {
         return "default";
       }
+    },
+    // 当前播放的视频是否属于该剧集
+    isCurrentEpisode(episode) {
+      return episode.LocalMatchedFiles.some((file) => file.Id == this.Id);
     },
     aiSubtitleBtn(e) {
       ElMessageBox.confirm(
@@ -174,72 +188,172 @@ export default {
           });
         });
     },
-    updateUnwatchedColors() {
-      try {
-        const isDark = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const els = this.$el.querySelectorAll('.unwatched-title');
-        els.forEach((el) => {
-          const color = isDark ? '#ffffff' : '#000000';
-          // 使用 setProperty 的 priority 参数设置为 'important'，覆盖其它样式
-          el.style.setProperty('color', color, 'important');
-        });
-      } catch (err) {
-        // 忽略在服务端渲染或没有 DOM 时的错误
-        // console.warn('updateUnwatchedColors error', err);
-      }
-    },
   },
 };
 </script>
 <style scoped>
 .bangumi-collapse {
   min-height: 100px;
+  /* 去掉折叠面板自带的分隔线，改用剧集卡片自身的间距区分 */
+  border-top: none;
+  border-bottom: none;
 }
-.bangumi-collapse-item {
-  /* 防止换行 */
-  word-break: normal;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.bangumi-collapse :deep(.el-collapse-item) {
+  margin-bottom: 6px;
 }
+.bangumi-collapse :deep(.el-collapse-item:last-child) {
+  margin-bottom: 0;
+}
+
+/* 剧集卡片 */
+.bangumi-collapse :deep(.el-collapse-item__header) {
+  position: relative;
+  padding: 0 8px;
+  border-bottom: none;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+.bangumi-collapse :deep(.el-collapse-item__header:hover) {
+  background-color: var(--el-fill-color-light);
+}
+.bangumi-collapse :deep(.el-collapse-item__wrap) {
+  border-bottom: none;
+}
+.bangumi-collapse :deep(.el-collapse-item__content) {
+  padding-bottom: 8px;
+}
+.bangumi-collapse :deep(.el-collapse-item__arrow) {
+  color: var(--el-text-color-secondary);
+}
+
+/* 当前播放的剧集 */
+.bangumi-collapse-item.is-playing :deep(.el-collapse-item__header) {
+  background-color: var(--el-color-primary-light-9);
+}
+.bangumi-collapse-item.is-playing :deep(.el-collapse-item__header)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background-color: var(--el-color-primary);
+}
+.bangumi-collapse-item.is-playing .episode-name {
+  color: var(--el-color-primary);
+  font-weight: 600;
+}
+
+/* 剧集行的 header 实际是 <button>，UA 默认 text-align: center 会被标题继承 */
 .bangumi-collapse-item:deep(.el-collapse-item__header) {
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.bangumi-collapse :deep(.el-collapse-item.is-disabled) .el-collapse-item__header {
   cursor: default;
 }
-.bangumi-collapse-item-button {
+.bangumi-collapse :deep(.el-collapse-item.is-disabled) .el-collapse-item__arrow {
+  visibility: hidden;
+}
+
+/* 剧集标题行：标题 + 放送日期 + 观看状态 */
+.bangumi-collapse-item .episode-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.bangumi-collapse-item .episode-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--el-text-color-primary);
+}
+.bangumi-collapse-item .episode-date {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.bangumi-collapse-item .episode-status {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  font-size: 12px;
+  line-height: 18px;
+  border-radius: 4px;
+}
+.bangumi-collapse-item .episode-status.is-watched {
+  color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
+.bangumi-collapse-item .episode-status.is-unwatched {
+  color: var(--el-text-color-secondary);
+  background-color: var(--el-fill-color);
+}
+
+/* 剧集下的文件列表 */
+.episode-files {
   display: flex;
   flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: flex-start;
+  gap: 6px;
 }
-.bangumi-collapse-item-button:deep(.el-button) {
-  margin: 0;
+.episode-file {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
-
-.bangumi-title-text {
-  display: inline-block;
-  max-width: calc(100% - 40px);
-  white-space: nowrap;
+.episode-file :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+.episode-file .episode-file-name {
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  min-height: 28px;
+  padding: 4px 8px;
+  justify-content: flex-start;
+  /* 按钮默认居中，这里显式左对齐 */
+  text-align: left;
+  border-radius: 6px;
+  background-color: var(--el-fill-color-light);
+}
+.episode-file .episode-file-name:hover {
+  background-color: var(--el-fill-color);
+}
+/* 文件名最多两行，超出省略，完整名称见 title 提示 */
+.episode-file .episode-file-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
 }
-
-/* 未观看：默认浅色模式为纯黑，暗色模式（项目使用 html.dark）为纯白 */
-.bangumi-collapse .unwatched-title,
-.unwatched-title {
-  color: #000 !important;
+/* 当前播放的文件 */
+.episode-file :deep(.episode-file-name.el-button--primary) {
+  font-weight: 600;
+  background-color: var(--el-color-primary-light-9);
 }
-
-/* 如果项目使用 html.dark 切换暗色主题，则在该类下显示白色 */
-html.dark .bangumi-collapse .unwatched-title,
-html.dark .unwatched-title {
-  color: #fff !important;
+.episode-file :deep(.episode-file-name.el-button--primary:hover) {
+  background-color: var(--el-color-primary-light-8);
 }
-
-/* 保留对 prefers-color-scheme 的兼容性（系统主题优先） */
-@media (prefers-color-scheme: dark) {
-  .bangumi-collapse .unwatched-title,
-  .unwatched-title {
-    color: #fff !important;
-  }
+.episode-file .episode-file-more {
+  flex-shrink: 0;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--el-text-color-secondary);
+}
+.episode-file .episode-file-more:hover {
+  color: var(--el-color-primary);
 }
 </style>
