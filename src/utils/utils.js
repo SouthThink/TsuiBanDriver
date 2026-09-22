@@ -57,33 +57,72 @@ const formatSpeed = (speed) => {
   }
 };
 
-//状态转换成中文
+//状态转换成中文（键为 qBittorrent WebUI API 返回的 state 字段原始值）
 const stateText = (state) => {
   let stateType = {
-    stalledUP: "做种",
-    stalledDL: "等待",
-    checkingUP: "检查",
-    checkingDL: "检查",
+    // 下载相关
     downloading: "下载",
-    finished: "完成",
-    moving: "移动",
+    forcedDL: "强制下载",
+    metaDL: "获取元数据",
+    forcedMetaDL: "强制获取元数据",
+    allocating: "分配空间",
+    stalledDL: "等待",
+    queuedDL: "排队中",
+    pausedDL: "已暂停", // qBittorrent 5.0 起改名为 stoppedDL
+    stoppedDL: "已停止",
+    // 上传/做种相关
     uploading: "上传",
+    forcedUP: "强制做种",
+    stalledUP: "做种",
+    queuedUP: "排队中",
+    pausedUP: "已暂停", // qBittorrent 5.0 起改名为 stoppedUP
+    stoppedUP: "已停止",
+    // 校验、移动等中间状态
+    checkingDL: "检查",
+    checkingUP: "检查",
+    checkingResumeData: "检查续传",
+    moving: "移动",
+    // 完成与异常
+    finished: "完成",
+    error: "出错",
+    missingFiles: "文件丢失",
+    unknown: "未知",
   };
-  return stateType[state];
+  // 未收录的状态直接返回原始值，避免状态更新后界面空白
+  return stateType[state] || state || stateType.unknown;
 };
 //状态转换成颜色
 const stateColor = (state) => {
   let stateType = {
-    stalledUP: "info",
-    stalledDL: "primary",
-    checkingUP: "warning",
-    checkingDL: "warning",
+    // 下载相关
     downloading: "success",
-    finished: "success",
-    moving: "info",
+    forcedDL: "success",
+    metaDL: "warning",
+    forcedMetaDL: "warning",
+    allocating: "warning",
+    stalledDL: "primary",
+    queuedDL: "primary",
+    pausedDL: "info",
+    stoppedDL: "info",
+    // 上传/做种相关
     uploading: "warning",
+    forcedUP: "warning",
+    stalledUP: "info",
+    queuedUP: "primary",
+    pausedUP: "info",
+    stoppedUP: "info",
+    // 校验、移动等中间状态
+    checkingDL: "warning",
+    checkingUP: "warning",
+    checkingResumeData: "warning",
+    moving: "info",
+    // 完成与异常
+    finished: "success",
+    error: "danger",
+    missingFiles: "danger",
+    unknown: "info",
   };
-  return stateType[state];
+  return stateType[state] || "info";
 };
 
 // 定义一个函数，用于合并两个对象

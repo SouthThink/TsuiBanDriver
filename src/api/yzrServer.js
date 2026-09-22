@@ -98,6 +98,15 @@ export function deleteTorrents(data) {
   });
 }
 
+// 种子动作：暂停/启动/强制启动/强制校验/重新汇报
+export function torrentsAction(data) {
+  return request(BASE_URL,{
+    url: "/torrentsAction",
+    method: "post",
+    data,
+  });
+}
+
 export function getRssRules(params) {
   return request(BASE_URL,{
     url: "/rssRules",

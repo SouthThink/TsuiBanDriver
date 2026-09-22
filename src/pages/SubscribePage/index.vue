@@ -41,8 +41,9 @@ const timer = ref(null);
 const loading = ref(false);
 const downloadVisible = ref(false);
 
-const getRssList = () => {
-  loading.value = true;
+// silent: 后台轮询时静默刷新，不显示"加载中"遮罩，避免界面闪烁
+const getRssList = (silent = false) => {
+  if (!silent) loading.value = true;
   getRssItems({ withData: true })
     .then((res) => {
       rssData.value = res.data;
@@ -109,7 +110,7 @@ const refresh = (row) => {
 };
 
 const startRefreshRssList = () => {
-  timer.value = setInterval(getRssList, 3000);
+  timer.value = setInterval(() => getRssList(true), 3000);
 };
 
 const updateAll = () => {
@@ -185,7 +186,7 @@ const closeDownloadMsgBox = () => {
 onMounted(() => {
   getRssList();
   downloadVisible.value = false;
-  timer.value = setInterval(getRssList, 3000);
+  timer.value = setInterval(() => getRssList(true), 3000);
   onUnmounted(() => {
     clearInterval(timer.value);
   });

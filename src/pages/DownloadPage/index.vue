@@ -24,6 +24,7 @@
       </div>
       <el-table
         ref="tableRef"
+        border
         :data="filteredTorrents"
         style="width: 100%"
         v-loading="torrents.length === 0 && loading"
@@ -31,47 +32,17 @@
         allow-drag-last-column
         :row-class-name="getRowClassName"
         @selection-change="handleSelectionChange"
+        @row-contextmenu="openContextMenu"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column
-          fixed
           prop="name"
           :label="translate('文件名')"
           width="550"
           show-overflow-tooltip
         >
           <template #default="scope">
-            <el-popover placement="bottom" trigger="click">
-              <template #reference>
-                <el-text>{{ scope.row.name }}</el-text>
-              </template>
-              <el-menu class="right-click-menu">
-                <el-menu-item index="1">
-                  <template #title>
-                    <el-button
-                      type="danger"
-                      link
-                      :icon="Delete"
-                      @click="removeTorrent(scope.row)"
-                    >
-                      {{translate("删除种子")}}
-                    </el-button>
-                  </template>
-                </el-menu-item>
-                <el-menu-item index="2">
-                  <template #title>
-                    <el-button
-                      type="primary"
-                      link
-                      :icon="Edit"
-                      @click="setLocationBtn(scope.row)"
-                    >
-                      {{translate("移动位置")}}
-                    </el-button>
-                  </template>
-                </el-menu-item>
-              </el-menu>
-            </el-popover>
+            <el-text>{{ scope.row.name }}</el-text>
           </template>
         </el-table-column>
         <el-table-column
@@ -137,6 +108,33 @@
         </el-table-column>
         <el-table-column prop="num_complete" :label="translate('做种数')" />
       </el-table>
+      <!-- 行右键菜单：位置跟随鼠标 -->
+      <div
+        v-if="contextMenu.visible"
+        ref="contextMenuRef"
+        class="torrent-context-menu"
+        :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+        @contextmenu.prevent
+      >
+        <el-menu class="right-click-menu">
+          <el-menu-item
+            v-for="(item, index) in visibleMenuActions(contextMenu.row)"
+            :key="item.label"
+            :index="String(index)"
+          >
+            <template #title>
+              <el-button
+                :type="item.type"
+                link
+                :icon="item.icon"
+                @click="runMenuAction(item, contextMenu.row)"
+              >
+                {{translate(item.label)}}
+              </el-button>
+            </template>
+          </el-menu-item>
+        </el-menu>
+      </div>
     </div>
     <div
       class="download-card"
@@ -256,27 +254,19 @@
                 </el-descriptions>
               </template>
               <el-menu class="right-click-menu">
-                <el-menu-item index="1">
+                <el-menu-item
+                  v-for="(item, index) in visibleMenuActions(torrent)"
+                  :key="item.label"
+                  :index="String(index)"
+                >
                   <template #title>
                     <el-button
-                      type="danger"
+                      :type="item.type"
                       link
-                      :icon="Delete"
-                      @click="removeTorrent(torrent)"
+                      :icon="item.icon"
+                      @click="runMenuAction(item, torrent)"
                     >
-                      {{translate("删除种子")}}
-                    </el-button>
-                  </template>
-                </el-menu-item>
-                <el-menu-item index="2">
-                  <template #title>
-                    <el-button
-                      type="primary"
-                      link
-                      :icon="Edit"
-                      @click="setLocationBtn(torrent)"
-                    >
-                      {{translate("移动位置")}}
+                      {{translate(item.label)}}
                     </el-button>
                   </template>
                 </el-menu-item>
@@ -290,9 +280,19 @@
   </div>
 </template>
 <script setup>
-import { getDownloadList, deleteTorrents, setLocation } from "@/api/yzrServer";
-import { ref, onMounted, onUnmounted, nextTick, computed } from "vue";
-import { Delete, Edit, Search } from "@element-plus/icons-vue";
+import { getDownloadList, deleteTorrents, setLocation, torrentsAction } from "@/api/yzrServer";
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from "vue";
+import {
+  Delete,
+  Edit,
+  Search,
+  VideoPlay,
+  VideoPause,
+  TopRight,
+  BottomRight,
+  CircleCheck,
+  Promotion,
+} from "@element-plus/icons-vue";
 import {
   fileSize,
   formatDate,
@@ -322,6 +322,92 @@ const timer = ref(null);
 const rid = ref(0);
 const rid2 = ref(null);
 const loading = ref(false);
+
+// 行右键菜单：记录目标行与鼠标位置
+const contextMenu = reactive({
+  visible: false,
+  x: 0,
+  y: 0,
+  row: null,
+});
+const contextMenuRef = ref(null);
+
+// 在表格任意一行右击时打开该行的菜单
+const openContextMenu = async (row, column, event) => {
+  event.preventDefault(); // 屏蔽浏览器默认右键菜单
+  contextMenu.row = row;
+  contextMenu.x = event.clientX;
+  contextMenu.y = event.clientY;
+  contextMenu.visible = true;
+  await nextTick();
+  // 靠近窗口边缘时向内收，避免菜单超出可视区域
+  const menu = contextMenuRef.value;
+  if (!menu) return;
+  contextMenu.x = Math.max(
+    8,
+    Math.min(contextMenu.x, window.innerWidth - menu.offsetWidth - 8)
+  );
+  contextMenu.y = Math.max(
+    8,
+    Math.min(contextMenu.y, window.innerHeight - menu.offsetHeight - 8)
+  );
+};
+
+const closeContextMenu = () => {
+  contextMenu.visible = false;
+};
+
+// 在表格行以外的位置右键时关闭菜单（行内右键由 row-contextmenu 处理）
+const handleGlobalContextMenu = (event) => {
+  if (event.target?.closest?.(".el-table__row")) return;
+  closeContextMenu();
+};
+
+// 暂停/停止状态（qBittorrent 5.0 起 pausedDL/pausedUP 改名为 stoppedDL/stoppedUP）
+const isStoppedState = (state) =>
+  ["pausedDL", "pausedUP", "stoppedDL", "stoppedUP"].includes(state);
+// 强制状态（forcedDL / forcedUP / forcedMetaDL）
+const isForcedState = (state) =>
+  typeof state === "string" && state.startsWith("forced");
+
+// 菜单操作：delete/setLocation 走专用接口，其余动作经 /torrentsAction 透传给 qBittorrent
+// visible 控制互斥项：暂停↔启动、强制启动↔取消强制，只显示当前该做的那个
+const menuActions = [
+  { action: "resume", label: "启动", icon: VideoPlay, type: "primary", visible: (row) => isStoppedState(row?.state) },
+  { action: "pause", label: "暂停", icon: VideoPause, type: "warning", visible: (row) => !isStoppedState(row?.state) },
+  { action: "forceStart", label: "强制启动", icon: TopRight, type: "success", value: "true", visible: (row) => !isForcedState(row?.state) },
+  { action: "forceStart", label: "取消强制", icon: BottomRight, type: "info", value: "false", visible: (row) => isForcedState(row?.state) },
+  { action: "recheck", label: "检查文件", icon: CircleCheck, type: "primary" },
+  { action: "reannounce", label: "更新Tracker", icon: Promotion, type: "primary" },
+  { action: "setLocation", label: "移动位置", icon: Edit, type: "primary" },
+  { action: "delete", label: "删除种子", icon: Delete, type: "danger" },
+];
+
+// 按行状态过滤掉互斥项
+const visibleMenuActions = (row) =>
+  menuActions.filter((item) => !item.visible || item.visible(row));
+
+const runMenuAction = (item, row) => {
+  closeContextMenu();
+  if (item.action === "delete") return removeTorrent(row);
+  if (item.action === "setLocation") return setLocationBtn(row);
+  const data = { action: item.action, hashes: row.infohash_v1 };
+  // 强制启动/取消强制是同一个接口（setForceStart），靠 value 区分
+  if (item.value !== undefined) data.value = item.value;
+  torrentsAction(data)
+    .then((res) => {
+      if (res.code === 200) {
+        ElNotification({
+          title: translate(item.label),
+          message: translate("操作成功"),
+          type: "success",
+        });
+        rid.value = 0;
+      }
+    })
+    .catch(() => {});
+};
+
 const tOrC = ref("table");
 const sortingType = ref("default");
 const sortingTypeList = [
@@ -567,6 +653,21 @@ const sortingList = () => {
   }
 };
 
+// 点击其他位置、滚动或改变窗口大小时关闭右键菜单
+onMounted(() => {
+  document.addEventListener("click", closeContextMenu);
+  document.addEventListener("contextmenu", handleGlobalContextMenu);
+  window.addEventListener("resize", closeContextMenu);
+  window.addEventListener("scroll", closeContextMenu, true);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", closeContextMenu);
+  document.removeEventListener("contextmenu", handleGlobalContextMenu);
+  window.removeEventListener("resize", closeContextMenu);
+  window.removeEventListener("scroll", closeContextMenu, true);
+});
+
 onMounted(() => {
   getDownloadListBtn();
   timer.value = setInterval(getDownloadListBtn, 3000);
@@ -588,12 +689,24 @@ onMounted(() => {
 .download-table:deep(.el-table .el-table__cell) {
   padding: 5px;
 }
+/* 行右键菜单容器：固定定位在鼠标位置 */
+.torrent-context-menu {
+  position: fixed;
+  z-index: 3000;
+  padding: 4px;
+  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  box-shadow: var(--el-box-shadow-light);
+}
+
 .right-click-menu {
   border: 0;
 }
 
 .right-click-menu:deep(.el-menu-item) {
-  padding: 0 !important;
+  /* 右侧留一点空，避免最长一项的文字贴住菜单边缘 */
+  padding: 0 12px 0 0 !important;
   height: 30px;
 }
 
