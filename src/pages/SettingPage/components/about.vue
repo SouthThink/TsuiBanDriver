@@ -5,7 +5,6 @@
       <!-- <el-link :href="item.href">{{ item.value }}</el-link> -->
       <el-link @click="openHref(item.href)">{{ item.value }}</el-link>
     </div>
-    <el-divider v-else />
   </div>
 </template>
 <script setup>
@@ -44,8 +43,3 @@ const openHref = (href) => {
   window.open(href, "_blank");
 };
 </script>
-<style lang="css" scoped>
-.about-container:deep(.el-divider) {
-  margin: 0;
-}
-</style>

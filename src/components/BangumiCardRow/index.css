@@ -105,3 +105,16 @@
 .bangumi-item:hover .bangumi-item-title {
   color: var(--el-color-primary);
 }
+
+/* 骨架屏标题块：盒高与真实标题（40px 两行）一致，避免加载完成时跳动 */
+.bangumi-item-title-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 40px;
+}
+/* 骨架屏封面填充整个封面区（覆盖 Element Plus 对 image 变体的 unset 尺寸） */
+.bangumi-item-cover .el-skeleton__image {
+  width: 100%;
+  height: 100%;
+}

@@ -13,7 +13,26 @@
         </el-radio-button>
       </el-radio-group>
     </div>
-    <el-skeleton :loading="loading" animated :count="3">
+    <el-skeleton :loading="loading" animated>
+      <template #template>
+        <div class="timetable-card">
+          <el-row :gutter="12" class="timetable-card-row">
+            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n">
+              <div class="bangumi-item">
+                <div class="bangumi-item-cover">
+                  <el-skeleton-item variant="image" class="bangumi-item-img" />
+                </div>
+                <div class="bangumi-item-info">
+                  <div class="bangumi-item-title-skeleton">
+                    <el-skeleton-item variant="text" />
+                    <el-skeleton-item variant="text" />
+                  </div>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+      </template>
       <template #default>
         <div class="timetable-card" v-if="currentDayItems.length > 0">
           <el-row :gutter="12" class="timetable-card-row">

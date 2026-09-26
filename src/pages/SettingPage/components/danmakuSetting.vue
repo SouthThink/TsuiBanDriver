@@ -26,7 +26,7 @@
     <el-text>{{translate("防弹幕重叠")}}</el-text>
     <el-switch v-model="antiOverlap" @change="saveSetting('antiOverlap')" />
   </div>
-  <div class="setting-item">
+  <div class="setting-item setting-item-slider">
     <el-text>{{translate("不透明度")}}</el-text>
     <el-slider
       v-model="opacity"
@@ -37,7 +37,7 @@
       @change="saveSetting('opacity')"
     />
   </div>
-  <div class="setting-item">
+  <div class="setting-item setting-item-slider">
     <el-text>{{translate("显示区域")}}</el-text>
     <el-slider
       v-model="margin"
@@ -50,7 +50,7 @@
       @change="saveSetting('margin')"
     />
   </div>
-  <div class="setting-item">
+  <div class="setting-item setting-item-slider">
     <el-text>{{translate("弹幕字号")}}</el-text>
     <el-slider
       v-model="fontSize"
@@ -61,7 +61,7 @@
       @change="saveSetting('fontSize')"
     />
   </div>
-  <div class="setting-item">
+  <div class="setting-item setting-item-slider">
     <el-text>{{translate("弹幕速度")}}</el-text>
     <el-slider
       v-model="speed"
@@ -160,5 +160,31 @@ const saveSetting = (event) => {
 <style scoped>
 .danmaku-setting {
   width: 200px;
+}
+
+/* 末端刻度文字改为向左对齐，避免超出滑块右边界 */
+.danmaku-setting:deep(.el-slider__marks-text:last-child) {
+  transform: translateX(-100%);
+}
+
+/* 刻度文字位于滑块盒子下方（Element Plus 绝对定位），需给行留出下方空间，
+   否则文字会与设置行的分隔线重叠 */
+.setting-item.setting-item-slider {
+  padding-bottom: 28px;
+}
+
+/* 窄屏：滑块行改为上下堆叠，滑块占满整行 */
+@media (max-width: 768px) {
+  .setting-item.setting-item-slider {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    min-height: 0;
+  }
+
+  .danmaku-setting {
+    width: auto;
+    margin: 0 8px;
+  }
 }
 </style>

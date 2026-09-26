@@ -1,4 +1,6 @@
 <template>
+  <div class="setting-item">
+    <el-text>{{ translate("语言") }}</el-text>
     <el-select
       v-model="lang"
       style="max-width: 60%; width: 240px"
@@ -11,6 +13,7 @@
         :value="item.name"
       />
     </el-select>
+  </div>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'

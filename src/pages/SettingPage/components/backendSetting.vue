@@ -4,7 +4,7 @@
     <div class="setting-item">
       <el-text>qBittorrent</el-text>
       <el-text v-if="qbInfo.version" class="info-text">
-        {{qbInfo.host}}:{{qbInfo.port}} | {{translate("版本")}}: {{qbInfo.version}}
+        {{translate("版本")}}: {{qbInfo.version}}
       </el-text>
       <el-button type="primary" @click="openQBDialog">
         {{qbInfo.version ? translate("编辑") : translate("设置")}}
@@ -59,7 +59,7 @@
     <div class="setting-item">
       <el-text>dandanPlay</el-text>
       <el-text v-if="ddpInfo.version" class="info-text">
-        {{ddpInfo.host}}:{{ddpInfo.port}} | {{translate("版本")}}: {{ddpInfo.version}}
+        {{translate("版本")}}: {{ddpInfo.version}}
       </el-text>
       <el-button type="primary" @click="openDDPDialog">
         {{ddpInfo.version ? translate("编辑") : translate("设置")}}

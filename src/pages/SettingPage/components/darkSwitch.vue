@@ -1,4 +1,6 @@
 <template>
+  <div class="setting-item">
+    <el-text>{{ translate("深色模式") }}</el-text>
     <el-switch
       v-model="isDark"
       inline-prompt
@@ -11,6 +13,7 @@
       class="dark-switch"
       @change="toggleDark"
     />
+  </div>
 </template>
 <script setup>
 import { useDark, useToggle } from "@vueuse/core";
