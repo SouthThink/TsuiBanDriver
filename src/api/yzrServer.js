@@ -195,28 +195,6 @@ export function allVersion(params) {
   });
 }
 
-export function aiSubtitle(params) {
-  return request(BASE_URL,{
-    url: "/aiSubtitle",
-    method: "get",
-    params,
-  });
-
-}export function aiConfig(params) {
-  return request(BASE_URL,{
-    url: "/aiConfig",
-    method: "get",
-    params,
-  });
-}
-export function addEditAiConfig(data) {
-  return request(BASE_URL,{
-      method: "post",
-      url:"/addEditAiConfig",
-      data,
-  });
-}
-
 export function aiChat(data) {
   return request(BASE_URL,{
     url: "/aiChat",
@@ -225,11 +203,41 @@ export function aiChat(data) {
   });
 }
 
-export function deleteAiConfig(data) {
+export function getAiConversations() {
   return request(BASE_URL,{
-      method: "post",
-      url:"/deleteAiConfig",
-      data,
+    url: "/aiConversations",
+    method: "get",
+  });
+}
+
+export function getAiConversation(params) {
+  return request(BASE_URL,{
+    url: "/aiConversation",
+    method: "get",
+    params,
+  });
+}
+
+export function newAiConversation() {
+  return request(BASE_URL,{
+    url: "/newAiConversation",
+    method: "post",
+  });
+}
+
+export function deleteAiConversation(data) {
+  return request(BASE_URL,{
+    url: "/deleteAiConversation",
+    method: "post",
+    data,
+  });
+}
+
+export function renameAiConversation(data) {
+  return request(BASE_URL,{
+    url: "/renameAiConversation",
+    method: "post",
+    data,
   });
 }
 

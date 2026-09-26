@@ -41,14 +41,6 @@
             >
               <span class="episode-file-text">{{ file.Name }}</span>
             </el-button>
-            <el-button
-              class="episode-file-more"
-              text
-              title="AI生成字幕"
-              @click="aiSubtitleBtn(file)"
-            >
-              <el-icon><More /></el-icon>
-            </el-button>
           </div>
         </div>
       </el-collapse-item>
@@ -56,7 +48,7 @@
   </div>
 </template>
 <script>
-import { aiSubtitle, bangumiList } from "@/api/yzrServer";
+import { bangumiList } from "@/api/yzrServer";
 export default {
   data() {
     return {
@@ -158,35 +150,6 @@ export default {
     // 当前播放的视频是否属于该剧集
     isCurrentEpisode(episode) {
       return episode.LocalMatchedFiles.some((file) => file.Id == this.Id);
-    },
-    aiSubtitleBtn(e) {
-      ElMessageBox.confirm(
-        "开始AI生成字幕？（这将可能会消耗大量时间）",
-        "提示",
-        {
-          confirmButtonText: "确定",
-          cancelButtonText: "取消",
-          type: "warning",
-        }
-      )
-        .then(() => {
-          aiSubtitle({ video_path: e.Path })
-            .then((res) => {
-              console.log("返回", res);
-              ElNotification({
-                title: "获取字幕成功",
-                message: res.msg,
-                type: "success",
-              });
-            })
-            .catch(() => {});
-        })
-        .catch(() => {
-          ElMessage({
-            type: "info",
-            message: "已取消",
-          });
-        });
     },
   },
 };
@@ -344,16 +307,5 @@ export default {
 }
 .episode-file :deep(.episode-file-name.el-button--primary:hover) {
   background-color: var(--el-color-primary-light-8);
-}
-.episode-file .episode-file-more {
-  flex-shrink: 0;
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--el-text-color-secondary);
-}
-.episode-file .episode-file-more:hover {
-  color: var(--el-color-primary);
 }
 </style>
