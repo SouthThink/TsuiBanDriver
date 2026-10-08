@@ -6,8 +6,10 @@
         <div class="player-wrapper">
           <div class="player">
             <Artplayer
-              @get-instance="getInstance"
+              ref="player"
+              @subtitle-list="onSubtitleList"
               :videoId="videoId"
+              :videoPath="videoPath"
               :style="style"
             />
           </div>
@@ -30,7 +32,7 @@
                 @click="handleSubtitleClick(subtitle)"
               >
                 <el-icon class="subtitle-item-icon"><Document /></el-icon>
-                <span class="subtitle-item-text">{{ subtitle }}</span>
+                <span class="subtitle-item-text">{{ subtitle.name }}</span>
               </div>
             </div>
           </el-scrollbar>
@@ -61,7 +63,6 @@
 <script>
 import Artplayer from "@/components/ArtPlayer.vue";
 import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
-import { getSubtitleList, setSubtitle } from "@/api/yzrServer";
 export default {
   data() {
     return {
@@ -71,6 +72,7 @@ export default {
       },
       videoId: "",
       AnimeId: "",
+      videoPath: "",
       bangumiList: [],
       title: "",
       subtitleList: [],
@@ -82,8 +84,8 @@ export default {
         this.title = "";
         this.videoId = route.query.videoId;
         this.AnimeId = route.query.AnimeId;
-        console.log("watch", this.videoId, this.AnimeId);
-        this.fetchSubtitleList();
+        this.videoPath = route.query.path || "";
+        this.subtitleList = [];
       },
       immediate: true,
     },
@@ -92,65 +94,39 @@ export default {
     Artplayer,
     BangumiCollapse,
   },
-  beforeCreate() {
-    console.log("beforeCreate");
-  },
   mounted() {
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
+    this.videoPath = this.$route.query.path || "";
   },
   methods: {
-    getInstance(art) {
-      console.info("播放器信息", art);
-    },
     setTitle(title) {
       this.title = title;
       //设置页面标题
       document.title = title;
     },
     closePage() {
-      console.log("关闭当前页面");
       window.close();
     },
     handleVideoChange(data) {
-      console.log("切换视频:", data);
-
       this.videoId = data.videoId;
       this.AnimeId = data.AnimeId;
+      this.videoPath = data.path || "";
       this.title = data.title;
       document.title = data.title;
 
       this.$router.replace({
         name: "video",
-        query: { videoId: data.videoId, AnimeId: data.AnimeId },
+        query: { videoId: data.videoId, AnimeId: data.AnimeId, path: data.path },
       });
-
-      this.fetchSubtitleList();
     },
-    async fetchSubtitleList() {
-      if (!this.videoId) return;
-      try {
-        const res = await getSubtitleList({ videoId: this.videoId });
-        if (res.code === 200) {
-          this.subtitleList = res.data;
-        }
-      } catch {
-        // 错误已由 request 统一提示
-      }
+    // 播放器加载完字幕列表后回传，用于侧栏展示
+    onSubtitleList(list) {
+      this.subtitleList = Array.isArray(list) ? list : [];
     },
-    async handleSubtitleClick(subtitle) {
-      console.log("点击字幕:", subtitle);
-      try {
-        const res = await setSubtitle({
-          videoId: this.videoId,
-          subtitle: subtitle,
-        });
-        if (res.data === true) {
-          location.reload();
-        }
-      } catch {
-        // 错误已由 request 统一提示
-      }
+    // 点击字幕：直接让播放器切换，不再刷新页面
+    handleSubtitleClick(subtitle) {
+      this.$refs.player.switchSubtitle(subtitle);
     },
   },
 };

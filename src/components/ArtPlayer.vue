@@ -8,6 +8,9 @@ import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
 import tw from "artplayer/dist/i18n/zh-tw.js";
 import { translate } from '@/utils/translate';
 
+// 空字幕：切换到无字幕视频时用于清空已加载的字幕轨道
+const EMPTY_SUBTITLE_URL = "data:text/vtt;base64," + btoa("WEBVTT\n\n");
+
 export default {
   data() {
     return {
@@ -20,7 +23,6 @@ export default {
   watch: {
     videoId: {
       handler(newVal, oldVal) {
-        console.log("视频ID变化:", oldVal, "->", newVal);
         if (newVal && newVal !== oldVal) {
           this.switchVideo(newVal);
         }
@@ -32,6 +34,10 @@ export default {
       type: String,
       required: true,
     },
+    videoPath: {
+      type: String,
+      default: "",
+    },
   },
   mounted() {
     this.getLang();
@@ -42,7 +48,6 @@ export default {
     translate,
     detectMobile() {
       this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log("移动端检测:", this.isMobile);
     },
     getLang() {
       if (localStorage.getItem("lang") === "zh-TW") {
@@ -100,39 +105,27 @@ export default {
     },
     
     initPlayer() {
-      console.log("初始化播放器:", this.videoId);
-      
       if (this.instance) {
-        console.log("播放器已存在，直接返回");
         return;
       }
       
       this.currentVideoId = this.videoId;
       
       this.$nextTick(() => {
-        this.getVideoUrls(this.videoId).then(urls => {
+        this.getVideoUrls(this.videoId, this.videoPath).then(urls => {
           this.createPlayer(urls);
         });
       });
     },
     
     createPlayer(urls) {
-      const that = this;
       const danmukuConfig = this.getDanmukuConfig(this.videoId);
       
       try {
-        this.instance = new Artplayer({
+        const options = {
           url: urls.streamUrl,
           poster: urls.posterUrl,
-          subtitle: {
-            url: `/yzr/getSubtitle?videoId=${this.videoId}`,
-            type: "ass",
-            encoding: "utf-8",
-            escape: true,
-            style: {
-              "font-size": "18px",
-            },
-          },
+          subtitle: this.buildSubtitleOption(urls.subtitles[0]),
           i18n: {
             tw: tw,
           },
@@ -179,10 +172,16 @@ export default {
           plugins: [
             artplayerPluginDanmuku(danmukuConfig),
           ],
-          type: "m3u8",
-        });
+        };
+        
+        if (urls.thumbnails) {
+          options.thumbnails = urls.thumbnails;
+        }
+        
+        this.instance = new Artplayer(options);
         
         this.$emit("get-instance", this.instance);
+        this.$emit("subtitle-list", urls.subtitles);
         
         this.instance.on("artplayerPluginDanmuku:config", (option) => {
           if (!this.isMobile) {
@@ -195,8 +194,6 @@ export default {
           console.error("播放器错误:", error);
         });
         
-        console.log("播放器创建成功");
-        
       } catch (error) {
         console.error("创建播放器失败:", error);
         ElMessage.error("播放器初始化失败");
@@ -205,30 +202,30 @@ export default {
     
     switchVideo(newVideoId) {
       if (!this.instance) {
-        console.log("播放器实例不存在，创建新实例");
         this.currentVideoId = newVideoId;
         this.$nextTick(() => {
-          this.getVideoUrls(newVideoId).then(urls => {
+          this.getVideoUrls(newVideoId, this.videoPath).then(urls => {
             this.createPlayer(urls);
           });
         });
         return;
       }
       
-      console.log("切换视频:", this.currentVideoId, "->", newVideoId);
       this.currentVideoId = newVideoId;
       
-      this.getVideoUrls(newVideoId).then(urls => {
-        const newSubtitle = `/yzr/getSubtitle?videoId=${newVideoId}`;
+      this.getVideoUrls(newVideoId, this.videoPath).then(urls => {
         const newDanmuku = `/yzr/comment?videoId=${newVideoId}`;
         
         try {
           this.instance.url = urls.streamUrl;
           this.instance.poster = urls.posterUrl;
           
-          if (this.instance.subtitle) {
-            this.instance.subtitle.url = newSubtitle;
+          if (urls.thumbnails) {
+            this.instance.thumbnails = urls.thumbnails;
           }
+          
+          this.applySubtitle(urls.subtitles[0]);
+          this.$emit("subtitle-list", urls.subtitles);
           
           if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
             const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
@@ -237,11 +234,8 @@ export default {
             }
           }
           
-          console.log("视频切换成功");
-          
         } catch (error) {
           console.error("切换视频失败:", error);
-          console.log("重新创建播放器");
           this.destroyPlayer();
           this.$nextTick(() => {
             this.createPlayer(urls);
@@ -259,8 +253,6 @@ export default {
     destroyPlayer() {
       if (this.instance) {
         try {
-          console.log("销毁播放器");
-          
           if (this.instance.video) {
             this.instance.video.pause();
             this.instance.video.src = '';
@@ -284,11 +276,13 @@ export default {
       }
     },
     
-    async getVideoUrls(videoId) {
+    async getVideoUrls(videoId, path) {
       try {
-        const streamRes = await fetch(`/yzr/stream?videoId=${encodeURIComponent(videoId)}`);
-        
-        console.log('[getVideoUrls] Stream响应状态:', streamRes.status);
+        const query = new URLSearchParams({ videoId });
+        if (path) {
+          query.set("path", path);
+        }
+        const streamRes = await fetch(`/yzr/stream?${query.toString()}`);
         
         if (!streamRes.ok) {
           console.error('[getVideoUrls] 获取视频流失败:', streamRes.status);
@@ -296,22 +290,100 @@ export default {
         }
         
         const streamData = await streamRes.json();
-        console.log('[getVideoUrls] Stream URL:', streamData.url);
         
-        // 后端返回相对地址（统一走 /yzr 代理），浏览器会自动补上当前访问的 host，
+        // 后端返回相对地址（本地文件直读 / 回退代理），浏览器会自动补上当前访问的 host，
         // 因此局域网与外网访问都能正常播放
+        // 封面与进度条预览缩略图均由后端用 ffmpeg 从本地视频生成
+        const pathQuery = new URLSearchParams({ path }).toString();
+        const posterUrl = path
+          ? `/yzr/poster?${pathQuery}`
+          : `/api/api/v1/image/id/${videoId}`;
+        const thumbnails = path ? await this.getThumbnails(pathQuery) : null;
+        // 字幕列表（外挂 + 内封）同样由后端从本地获取
+        const subtitles = path ? await this.getSubtitleList(path) : [];
+        
         return {
           streamUrl: streamData.url,
-          posterUrl: `/api/api/v1/image/id/${videoId}`
+          posterUrl,
+          thumbnails,
+          subtitles
         };
       } catch (error) {
         console.error('获取视频URL失败:', error);
         ElMessage.error('获取视频信息失败: ' + error.message);
         return {
           streamUrl: '',
-          posterUrl: ''
+          posterUrl: '',
+          thumbnails: null,
+          subtitles: []
         };
       }
+    },
+    
+    // 获取进度条预览缩略图的布局信息（精灵图 + 网格参数）
+    async getThumbnails(pathQuery) {
+      try {
+        const res = await fetch(`/yzr/thumbnails?${pathQuery}`);
+        if (!res.ok) {
+          console.error('[getThumbnails] 获取缩略图信息失败:', res.status);
+          return null;
+        }
+        const data = await res.json();
+        if (data.code !== 200 || !data.data) {
+          return null;
+        }
+        const { url, number, column, width, height } = data.data;
+        return { url, number, column, width, height };
+      } catch (error) {
+        console.error('[getThumbnails] 获取缩略图信息异常:', error);
+        return null;
+      }
+    },
+    
+    // 获取本地字幕列表（外挂 + 内封）
+    async getSubtitleList(path) {
+      try {
+        const res = await fetch(`/yzr/getSubtitleList?${new URLSearchParams({ path })}`);
+        if (!res.ok) {
+          return [];
+        }
+        const data = await res.json();
+        return (data.code === 200 && Array.isArray(data.data)) ? data.data : [];
+      } catch (error) {
+        console.error('[getSubtitleList] 获取字幕列表异常:', error);
+        return [];
+      }
+    },
+    
+    // 构造播放器字幕配置（item 为空表示无字幕）
+    buildSubtitleOption(item) {
+      return {
+        url: item ? item.url : "",
+        type: item ? item.type : "",
+        name: item ? item.name : "",
+        encoding: "utf-8",
+        escape: true,
+        style: {
+          "font-size": "18px",
+        },
+      };
+    },
+    
+    // 应用字幕（免刷新）：notify 为 true 时显示切换提示
+    applySubtitle(item, notify = false) {
+      if (!this.instance || !this.instance.subtitle) return;
+      const url = item ? item.url : EMPTY_SUBTITLE_URL;
+      const option = { type: item ? item.type : "vtt" };
+      if (notify && item) {
+        option.name = item.name;
+      }
+      // 加载失败时播放器内部已弹出提示，这里仅避免未处理的 Promise 拒绝
+      this.instance.subtitle.switch(url, option).catch(() => {});
+    },
+    
+    // 供父组件调用：切换到指定字幕
+    switchSubtitle(item) {
+      this.applySubtitle(item, true);
     },
   },
   

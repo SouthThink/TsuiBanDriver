@@ -241,22 +241,6 @@ export function renameAiConversation(data) {
   });
 }
 
-export function getSubtitleList(params) {
-  return request(BASE_URL,{
-    url: "/getSubtitleList",
-    method: "get",
-    params,
-  });
-}
-
-export function setSubtitle(params) {
-  return request(BASE_URL,{
-    url: "/setSubtitle",
-    method: "get",
-    params,
-  });
-}
-
 export function getAiChatConfig() {
   return request(BASE_URL,{
     url: "/aiChatConfig",

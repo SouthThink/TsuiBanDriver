@@ -4,7 +4,6 @@
       v-model="activeNames"
       v-loading="bangumiList.length == 0"
       class="bangumi-collapse"
-      @change="handleChange"
     >
       <el-collapse-item
         v-for="(episode, episodeIndex) in bangumiList"
@@ -80,11 +79,6 @@ export default {
       },
       immediate: true,
     },
-    Id: {
-      handler(newVal) {
-        console.log("新的视频id", newVal);
-      },
-    },
   },
   methods: {
     //时间格式转换成阅读格式
@@ -98,22 +92,18 @@ export default {
 
       return `${year}/${month}/${day}`;
     },
-    handleChange(e) {
-      //   console.log(e);
-    },
     routeToVideo(e) {
-      console.log("点击的视频存放在", e.Path);
-
       if (this.openInNewTab) {
         const route = this.$router.resolve({
           name: "video",
-          query: { videoId: e.Id, AnimeId: e.AnimeId },
+          query: { videoId: e.Id, AnimeId: e.AnimeId, path: e.Path },
         });
         window.open(route.href, "_blank");
       } else {
         this.$emit("videoChange", {
           videoId: e.Id,
           AnimeId: e.AnimeId,
+          path: e.Path,
           title: e.AnimeTitle + " " + e.EpisodeTitle,
         });
       }
@@ -125,9 +115,7 @@ export default {
 
       try {
         const res = await bangumiList({ params: e });
-        console.log("返回的集数", res);
         this.bangumiList = (res && res.Episodes) || [];
-        // console.log(this.bangumiList);
         // 已有本地文件的剧集默认展开
         this.bangumiList.forEach((element, index) => {
           if (element.LocalMatchedFiles.length !== 0) {
@@ -141,7 +129,6 @@ export default {
     isSelected(e) {
       if (e.Id == this.Id) {
         this.$emit("getTitle", e.AnimeTitle + " " + e.EpisodeTitle);
-        console.log(e);
         return "primary";
       } else {
         return "default";
