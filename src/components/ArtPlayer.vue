@@ -7,14 +7,21 @@ import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
 import tw from "artplayer/dist/i18n/zh-tw.js";
 import { translate } from '@/utils/translate';
+import artplayerPluginJassub from '@/utils/artplayerPluginJassub';
+import { getFontList } from '@/api/yzrServer';
 
 // 空字幕：切换到无字幕视频时用于清空已加载的字幕轨道
 const EMPTY_SUBTITLE_URL = "data:text/vtt;base64," + btoa("WEBVTT\n\n");
+
+// 需要 libass（jassub）渲染的字幕类型：内置渲染会把 ass 转成 vtt 丢失样式
+const ASS_TYPES = ["ass", "ssa"];
 
 export default {
   data() {
     return {
       instance: null,
+      jassub: null,
+      externalFonts: [],
       lang: "zh-cn",
       isMobile: false,
       currentVideoId: "",
@@ -120,12 +127,18 @@ export default {
     
     createPlayer(urls) {
       const danmukuConfig = this.getDanmukuConfig(this.videoId);
-      
+      this.externalFonts = urls.fonts || [];
+      // 首个字幕：ass 交给 jassub，其余（srt/vtt）交给内置渲染
+      const firstSubtitle = urls.subtitles[0];
+      const builtinSubtitle = firstSubtitle && !ASS_TYPES.includes(firstSubtitle.type)
+        ? firstSubtitle
+        : null;
+
       try {
         const options = {
           url: urls.streamUrl,
           poster: urls.posterUrl,
-          subtitle: this.buildSubtitleOption(urls.subtitles[0]),
+          subtitle: this.buildSubtitleOption(builtinSubtitle),
           i18n: {
             tw: tw,
           },
@@ -194,6 +207,11 @@ export default {
           console.error("播放器错误:", error);
         });
         
+        // 首个字幕为 ass 时用 jassub 渲染（内置会把 ass 转成 vtt）
+        if (firstSubtitle && ASS_TYPES.includes(firstSubtitle.type)) {
+          this.applySubtitle(firstSubtitle);
+        }
+        
       } catch (error) {
         console.error("创建播放器失败:", error);
         ElMessage.error("播放器初始化失败");
@@ -215,6 +233,9 @@ export default {
       
       this.getVideoUrls(newVideoId, this.videoPath).then(urls => {
         const newDanmuku = `/yzr/comment?videoId=${newVideoId}`;
+        this.externalFonts = urls.fonts || [];
+        // 重建 ASS 渲染器，以便加载新视频目录下的字幕组字体
+        this.resetJassub();
         
         try {
           this.instance.url = urls.streamUrl;
@@ -245,12 +266,17 @@ export default {
     },
     
     subtitleChange(item) {
-      item.tooltip = item.switch ? this.translate("隐藏") : this.translate("显示");
-      this.instance.subtitle.show = !item.switch;
-      return !item.switch;
+      const visible = !item.switch;
+      item.tooltip = visible ? this.translate("隐藏") : this.translate("显示");
+      this.instance.subtitle.show = visible;
+      // ass 由 jassub 渲染，需同步控制其画布显隐
+      this.setJassubVisible(visible);
+      return visible;
     },
     
     destroyPlayer() {
+      this.resetJassub();
+      
       if (this.instance) {
         try {
           if (this.instance.video) {
@@ -301,12 +327,15 @@ export default {
         const thumbnails = path ? await this.getThumbnails(pathQuery) : null;
         // 字幕列表（外挂 + 内封）同样由后端从本地获取
         const subtitles = path ? await this.getSubtitleList(path) : [];
+        // 字幕组随片提供的外挂字体（同目录 / fonts 子目录），供 ASS 渲染使用
+        const fonts = path ? await this.loadExternalFonts(path) : [];
         
         return {
           streamUrl: streamData.url,
           posterUrl,
           thumbnails,
-          subtitles
+          subtitles,
+          fonts
         };
       } catch (error) {
         console.error('获取视频URL失败:', error);
@@ -315,7 +344,8 @@ export default {
           streamUrl: '',
           posterUrl: '',
           thumbnails: null,
-          subtitles: []
+          subtitles: [],
+          fonts: []
         };
       }
     },
@@ -355,7 +385,21 @@ export default {
       }
     },
     
-    // 构造播放器字幕配置（item 为空表示无字幕）
+    // 获取字幕组随片提供的外挂字体地址（同目录 / fonts 子目录）
+    // 失败或无字体时返回空数组，由插件回退到内置中文字体
+    async loadExternalFonts(path) {
+      try {
+        const data = await getFontList({ path });
+        if (!data || data.code !== 200 || !Array.isArray(data.data)) {
+          return [];
+        }
+        return data.data.map((item) => item.url).filter(Boolean);
+      } catch {
+        return [];
+      }
+    },
+    
+    // 构造内置字幕配置（仅 vtt/srt；ass 交给 jassub，不能进入内置以免被转成 vtt）
     buildSubtitleOption(item) {
       return {
         url: item ? item.url : "",
@@ -370,7 +414,19 @@ export default {
     },
     
     // 应用字幕（免刷新）：notify 为 true 时显示切换提示
+    // ass/ssa 交给 jassub（libass）原生渲染，其余交给 Artplayer 内置
     applySubtitle(item, notify = false) {
+      if (!this.instance) return;
+      if (item && ASS_TYPES.includes(item.type)) {
+        this.applyAssSubtitle(item, notify);
+        return;
+      }
+      this.releaseJassub();
+      this.applyBuiltinSubtitle(item, notify);
+    },
+    
+    // srt/vtt（或无字幕）走 Artplayer 内置字幕
+    applyBuiltinSubtitle(item, notify = false) {
       if (!this.instance || !this.instance.subtitle) return;
       const url = item ? item.url : EMPTY_SUBTITLE_URL;
       const option = { type: item ? item.type : "vtt" };
@@ -379,6 +435,70 @@ export default {
       }
       // 加载失败时播放器内部已弹出提示，这里仅避免未处理的 Promise 拒绝
       this.instance.subtitle.switch(url, option).catch(() => {});
+    },
+    
+    // ass/ssa 走 jassub：拉取后端 /yzr/getSubtitle 返回的原始 ass 文本，
+    // 交给 libass 渲染，避免内置 assToVtt 造成的样式丢失
+    async applyAssSubtitle(item, notify = false) {
+      try {
+        const res = await fetch(item.url);
+        if (!res.ok) {
+          console.error("[jassub] 获取 ASS 字幕失败:", res.status);
+          ElMessage.error(this.translate("获取字幕内容失败"));
+          return;
+        }
+        const content = await res.text();
+        
+        // 关闭内置字幕轨道，避免两套渲染同时显示
+        this.applyBuiltinSubtitle(null);
+        
+        if (this.jassub) {
+          // 复用已有 jassub 实例，仅替换字幕轨道
+          await this.jassub.ready;
+          await this.jassub.renderer.setTrack(content);
+          await this.jassub.resize(true);
+        } else {
+          this.jassub = artplayerPluginJassub({
+            subContent: content,
+            fonts: this.externalFonts,
+          })(this.instance).instance;
+        }
+        this.setJassubVisible(true);
+        
+        if (notify) {
+          this.instance.notice.show = `${this.instance.i18n.get("Switch Subtitle")}: ${item.name}`;
+        }
+      } catch (error) {
+        console.error("[jassub] 渲染 ASS 字幕失败:", error);
+        ElMessage.error(this.translate("获取字幕内容失败"));
+      }
+    },
+    
+    // 释放 jassub 当前轨道并隐藏画布（保留 worker，切回 ass 时复用）
+    releaseJassub() {
+      if (!this.jassub) return;
+      this.setJassubVisible(false);
+      Promise.resolve(this.jassub.ready)
+        .then(() => this.jassub && this.jassub.renderer.freeTrack())
+        .catch(() => {});
+    },
+    
+    // 销毁 jassub 实例（切换视频时重建，以便重新加载新视频目录下的字体）
+    resetJassub() {
+      if (!this.jassub) return;
+      try {
+        this.jassub.destroy();
+      } catch (error) {
+        console.error("销毁 ASS 渲染器失败:", error);
+      }
+      this.jassub = null;
+    },
+    
+    // 控制 jassub 渲染画布的显隐
+    setJassubVisible(visible) {
+      if (this.jassub && this.jassub._canvas) {
+        this.jassub._canvas.style.display = visible ? "block" : "none";
+      }
     },
     
     // 供父组件调用：切换到指定字幕

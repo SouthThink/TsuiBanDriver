@@ -32,6 +32,10 @@ export default defineConfig({
     },
     port: 3000,
   },
+  // jassub 的 worker 会拆出多个 chunk，默认的 iife 输出不支持代码分割，必须用 ES 模块
+  worker: {
+    format: "es",
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

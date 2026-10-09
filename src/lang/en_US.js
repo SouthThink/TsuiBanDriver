@@ -201,6 +201,7 @@ export default {
   字幕: "Subtitles",
   显示: "Show",
   隐藏: "Hide",
+  获取字幕内容失败: "Failed to Get Subtitle Content",
   已看到最新: "Seen Latest",
   已看: "Watched ",
   话: " episodes",

@@ -336,6 +336,15 @@ export function bangumiList(params) {
   });
 }
 
+// 字幕组随片外挂字体（视频同目录 / fonts 子目录），供前端 ASS 渲染器加载
+export function getFontList(params) {
+  return request(BASE_URL,{
+    url: "/getFontList",
+    method: "get",
+    params,
+  });
+}
+
 export function getAuthStatus() {
   return request(BASE_URL,{
     url: "/authStatus",
