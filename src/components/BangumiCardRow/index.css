@@ -83,24 +83,28 @@
   padding: 6px 8px 8px;
 }
 .bangumi-item-info .bangumi-item-title {
-  /* 用普通元素而非 el-text：el-text 自带 align-self: center，
-     与下面实现两行截断的 -webkit-box 组合时，部分内核会把整段文字居中收缩 */
+  /* 单行：与下方「全 N 话」合计两行（20px × 2），卡片高度与原先一致 */
   width: 100%;
-  /* 盒高等于两行（20px × 2），避免第 3 行残影，同时保证卡片等高 */
-  height: 40px;
+  height: 20px;
   text-align: left;
   font-size: 0.92rem;
   font-weight: 500;
   line-height: 20px;
   color: var(--el-text-color-primary);
-  /* 固定两行，超出省略 */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
   overflow: hidden;
-  white-space: normal;
-  word-break: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   transition: color 0.25s ease;
+}
+/* 第二行：本地已有文件对应的最新集号（全 N 话） */
+.bangumi-item-info .bangumi-item-episode {
+  height: 20px;
+  font-size: 0.78rem;
+  line-height: 20px;
+  color: var(--el-text-color-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .bangumi-item:hover .bangumi-item-title {
   color: var(--el-color-primary);

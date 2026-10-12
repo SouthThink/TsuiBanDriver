@@ -204,6 +204,7 @@ export default {
   已看到最新: "Seen Latest",
   已看: "Watched ",
   话: " episodes",
+  全: "Total ",
   开始AI对话: "Start AI Chat",
   输入消息: "Type a message...",
   AI未返回有效回复: "AI did not return a valid response",

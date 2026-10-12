@@ -69,6 +69,7 @@
                 :rating="video.Rating"
                 :episodeWatched="video.EpisodeWatched"
                 :episodeTotal="video.EpisodeTotal"
+                :episodeLatest="video.EpisodeLatest"
               />
             </el-col>
           </el-row>

@@ -16,6 +16,9 @@
     </div>
     <div class="bangumi-item-info">
       <div class="bangumi-item-title">{{ title }}</div>
+      <div class="bangumi-item-episode" v-if="episodeLatest > 0">
+        {{ translate("全") + episodeLatest + translate("话") }}
+      </div>
     </div>
   </div>
 </template>
@@ -35,6 +38,11 @@ const props = defineProps({
     default: 0,
   },
   episodeTotal: {
+    type: Number,
+    default: 0,
+  },
+  // 本地已有文件对应的最新集号（第二行展示「全 N 话」），0 表示不显示
+  episodeLatest: {
     type: Number,
     default: 0,
   },
