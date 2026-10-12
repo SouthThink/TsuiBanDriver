@@ -5,6 +5,23 @@
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TsuiBan Driver</title>
+    <script>
+      // 首屏立即确定主题，避免等待 Vue 挂载期间底色闪白/闪黑。
+      // 读取的键与 @vueuse/core useDark() 默认 storageKey 一致，
+      // 判定逻辑与其保持一致：dark / light / auto（缺省或 auto 时跟随系统）。
+      (function () {
+        try {
+          var saved = localStorage.getItem("vueuse-color-scheme");
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var isDark = saved === "dark" || ((!saved || saved === "auto") && prefersDark);
+          document.documentElement.classList.toggle("dark", isDark);
+        } catch (e) {
+          /* 隐私模式下 localStorage 不可用时忽略，交给 useDark() 处理 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
