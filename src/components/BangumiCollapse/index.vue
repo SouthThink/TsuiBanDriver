@@ -31,30 +31,55 @@
             :key="fileIndex"
             class="episode-file"
           >
-            <el-button
+            <a
               class="episode-file-name"
-              :type="isSelected(file)"
+              :class="{ 'is-selected': isSelected(file) }"
+              :href="videoHref(file)"
+              :target="openInNewTab ? '_blank' : null"
               :title="file.Name"
-              text
-              @click="routeToVideo(file)"
+              @click="onClickFile(file, $event)"
             >
               <span class="episode-file-text">{{ file.Name }}</span>
+            </a>
+            <el-button
+              v-if="showRematch"
+              class="episode-file-rematch"
+              link
+              :title="translate('重新识别')"
+              @click="openRematch(file)"
+            >
+              <el-icon><Refresh /></el-icon>
             </el-button>
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
+
+    <!-- 单个文件识别错误时手动改判作品与剧集 -->
+    <RematchDialog
+      v-model="rematchVisible"
+      :file="rematchTarget"
+      @success="onRematchSuccess"
+    />
   </div>
 </template>
 <script>
 import { bangumiList } from "@/api/yzrServer";
+import { username } from "@/utils/user";
+import { translate } from "@/utils/translate";
+import RematchDialog from "@/components/RematchDialog/index.vue";
 export default {
   data() {
     return {
       activeNames: [],
       bangumiList: [],
       bangumiTitle: "",
+      rematchVisible: false,
+      rematchTarget: {},
     };
+  },
+  components: {
+    RematchDialog,
   },
   props: {
     AnimeId: {
@@ -69,18 +94,72 @@ export default {
       type: Boolean,
       default: false,
     },
+    // 是否显示单个文件的重新识别入口（仅番剧详情页展示，播放页不展示）
+    showRematch: {
+      type: Boolean,
+      default: false,
+    },
+    // 传入剧集数据时直接渲染，不再请求接口（详情页已经拿到剧集）
+    episodes: {
+      type: Array,
+      default: null,
+    },
   },
   watch: {
     AnimeId: {
       handler(newVal) {
-        if (newVal !== "") {
+        if (newVal === "") {
+          return;
+        }
+        if (this.episodes && this.episodes.length) {
+          this.applyEpisodes(this.episodes);
+        } else {
           this.showBangumiList(newVal);
         }
       },
       immediate: true,
     },
+    // 父组件重新拉取剧集（如单个文件重新识别后）时同步刷新列表
+    episodes(newVal) {
+      if (newVal && newVal.length) {
+        this.applyEpisodes(newVal);
+      }
+    },
   },
   methods: {
+    translate,
+    // 打开重新识别弹窗（单个文件识别错误时手动指定作品与剧集）
+    openRematch(file) {
+      this.rematchTarget = {
+        Name: file.Name,
+        VideoId: file.Id,
+        AnimeId: file.AnimeId || "",
+        AnimeTitle: file.AnimeTitle || "",
+        EpisodeId: file.EpisodeId || "",
+      };
+      this.rematchVisible = true;
+    },
+    // 改判成功：剧集数据由父组件传入时交给父组件重新拉取，否则刷新当前剧集列表
+    onRematchSuccess() {
+      this.rematchVisible = false;
+      if (this.episodes && this.episodes.length) {
+        this.$emit("refresh");
+        return;
+      }
+      if (this.AnimeId) {
+        this.showBangumiList(this.AnimeId);
+      }
+    },
+    // 渲染剧集列表，并默认展开已有本地文件的剧集
+    applyEpisodes(episodes) {
+      this.bangumiList = episodes || [];
+      this.activeNames = [];
+      this.bangumiList.forEach((element, index) => {
+        if (element.LocalMatchedFiles.length !== 0) {
+          this.activeNames.push(index);
+        }
+      });
+    },
     //时间格式转换成阅读格式
     formatReadTime(inputDate) {
       if (!inputDate) return "";
@@ -92,21 +171,25 @@ export default {
 
       return `${year}/${month}/${day}`;
     },
-    routeToVideo(e) {
+    // 播放页地址：作为 <a> 的 href，保留可复制链接、右键/中键新开的语义
+    videoHref(file) {
+      return this.$router.resolve({
+        name: "video",
+        query: { videoId: file.Id, AnimeId: file.AnimeId },
+      }).href;
+    },
+    // 详情页（openInNewTab）交给 href + target=_blank 由浏览器跳转；
+    // 播放页内点击则是切换当前播放的视频，不整页刷新，交给父组件处理
+    onClickFile(file, event) {
       if (this.openInNewTab) {
-        const route = this.$router.resolve({
-          name: "video",
-          query: { videoId: e.Id, AnimeId: e.AnimeId, path: e.Path },
-        });
-        window.open(route.href, "_blank");
-      } else {
-        this.$emit("videoChange", {
-          videoId: e.Id,
-          AnimeId: e.AnimeId,
-          path: e.Path,
-          title: e.AnimeTitle + " " + e.EpisodeTitle,
-        });
+        return;
       }
+      event.preventDefault();
+      this.$emit("videoChange", {
+        videoId: file.Id,
+        AnimeId: file.AnimeId,
+        title: file.AnimeTitle + " " + file.EpisodeTitle,
+      });
     },
     async showBangumiList(e) {
       this.bangumiList = [];
@@ -114,14 +197,8 @@ export default {
       this.bangumiTitle = e.Title;
 
       try {
-        const res = await bangumiList({ params: e });
-        this.bangumiList = (res && res.Episodes) || [];
-        // 已有本地文件的剧集默认展开
-        this.bangumiList.forEach((element, index) => {
-          if (element.LocalMatchedFiles.length !== 0) {
-            this.activeNames.push(index);
-          }
-        });
+        const res = await bangumiList({ params: e, username: username.value });
+        this.applyEpisodes((res && res.Episodes) || []);
       } catch {
         // 错误已由 request 统一提示
       }
@@ -129,10 +206,9 @@ export default {
     isSelected(e) {
       if (e.Id == this.Id) {
         this.$emit("getTitle", e.AnimeTitle + " " + e.EpisodeTitle);
-        return "primary";
-      } else {
-        return "default";
+        return true;
       }
+      return false;
     },
     // 当前播放的视频是否属于该剧集
     isCurrentEpisode(episode) {
@@ -257,19 +333,17 @@ export default {
   gap: 4px;
   min-width: 0;
 }
-.episode-file :deep(.el-button + .el-button) {
-  margin-left: 0;
-}
 .episode-file .episode-file-name {
   flex: 1;
   min-width: 0;
-  height: auto;
+  display: flex;
+  align-items: center;
   min-height: 28px;
   padding: 4px 8px;
-  justify-content: flex-start;
-  /* 按钮默认居中，这里显式左对齐 */
-  text-align: left;
   border-radius: 6px;
+  color: var(--el-text-color-primary);
+  text-decoration: none;
+  cursor: pointer;
   background-color: var(--el-fill-color-light);
 }
 .episode-file .episode-file-name:hover {
@@ -288,11 +362,20 @@ export default {
   word-break: break-word;
 }
 /* 当前播放的文件 */
-.episode-file :deep(.episode-file-name.el-button--primary) {
+.episode-file .episode-file-name.is-selected {
   font-weight: 600;
   background-color: var(--el-color-primary-light-9);
 }
-.episode-file :deep(.episode-file-name.el-button--primary:hover) {
+.episode-file .episode-file-name.is-selected:hover {
   background-color: var(--el-color-primary-light-8);
+}
+/* 重新识别：识别错误时手动指定作品与剧集 */
+.episode-file .episode-file-rematch {
+  flex-shrink: 0;
+  padding: 4px;
+  color: var(--el-text-color-secondary);
+}
+.episode-file .episode-file-rematch:hover {
+  color: var(--el-color-primary);
 }
 </style>

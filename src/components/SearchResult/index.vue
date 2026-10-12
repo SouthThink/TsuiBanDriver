@@ -20,7 +20,8 @@
     <div class="table" v-if="rssItems.length > 0">
       <el-table :data="currentPageData">
         <el-table-column property="title" :label="translate('标题')" />
-        <el-table-column :label="translate('操作')" width="85" align="center">
+        <!-- 未绑定 qBittorrent 时不提供订阅与下载入口 -->
+        <el-table-column v-if="qBittorrentEnabled" :label="translate('操作')" width="85" align="center">
           <template #header>
             <el-button type="primary" @click="addSearchRss" style="white-space: nowrap">
               {{ translate("订阅") }}
@@ -57,6 +58,7 @@ import { createDownload } from '@/utils/utils.js'
 import { translate } from '@/utils/translate'
 import { addFeed } from '@/api/yzrServer.js'
 import { ElNotification } from 'element-plus'
+import { qBittorrentEnabled } from '@/utils/backendStatus'
 
 const props = defineProps({
   data: { type: Object, default: () => ({ bangumiItem: [], rssItems: [], rssLink: '' }) },

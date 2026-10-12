@@ -60,10 +60,10 @@
               :md="4"
               :lg="3"
               v-for="video in videoList[item]"
-              :key="video.Id"
+              :key="video.AnimeId"
             >
               <BangumiCardRow
-                @click="showDrawer(video)"
+                @click="openDetail(video)"
                 :imgUrl="getImageUrl(video.Cover)"
                 :title="video.Title"
                 :rating="video.Rating"
@@ -76,23 +76,15 @@
         <el-empty description="无数据" v-show="tagList.length == 0" />
       </template>
     </el-skeleton>
-    <el-drawer
-      v-model="showBangumi"
-      :title="bangumiTitle"
-      direction="rtl"
-      :size="size"
-    >
-      <BangumiCollapse :AnimeId="AnimeId" :openInNewTab="true" />
-    </el-drawer>
   </div>
 </template>
 
 <script>
-import BangumiCollapse from "@/components/BangumiCollapse/index.vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
 import { translate } from '@/utils/translate'
 import { searchBangumi } from '@/api/yzrServer'
+import { username } from '@/utils/user'
 export default {
   data() {
     return {
@@ -102,7 +94,6 @@ export default {
       cover: "",
       search: "",
       searchTimer: null,
-      size: "100%",
       navType: [
         { name: "番剧季度", type: "season" },
         { name: "最近播放", type: "lastplay" },
@@ -113,19 +104,14 @@ export default {
         { name: "评分排序", type: "rating" },
       ],
       nav: "season",
-      showBangumi: false,
-      bangumiTitle: "",
-      AnimeId: "",
     };
   },
   computed: {
   },
   created() {
     this.getVideoList(this.nav);
-    this.size = window.innerWidth > 768 ? "50%" : "100%";
   },
   components: {
-    BangumiCollapse,
     BangumiCardRow,
   },
   computed: {},
@@ -136,7 +122,7 @@ export default {
       this.nav = e;
       clearTimeout(this.searchTimer);
       try {
-        const res = await searchBangumi({ params: e, keyword: "" });
+        const res = await searchBangumi({ params: e, keyword: "", username: username.value });
         this.groupByGroupName((res && res.data) || []);
       } catch {
         // 错误已由 request 统一提示
@@ -153,7 +139,7 @@ export default {
     async fetchSearch(keyword) {
       this.loading = true;
       try {
-        const res = await searchBangumi({ params: this.nav, keyword });
+        const res = await searchBangumi({ params: this.nav, keyword, username: username.value });
         this.groupByGroupName((res && res.data) || []);
       } catch {
         // 错误已由 request 统一提示
@@ -176,10 +162,12 @@ export default {
         this.tagList.sort();
       }
     },
-    showDrawer(e) {
-      this.showBangumi = true;
-      this.AnimeId = e.AnimeId.toString();
-      this.bangumiTitle = e.Title;
+    // 卡片点击进入番剧详情页
+    openDetail(video) {
+      this.$router.push({
+        name: "animeDetail",
+        query: { animeId: video.AnimeId.toString() },
+      });
     },
     getImageUrl(cover) {
       if (!cover) return '';

@@ -94,8 +94,9 @@ function request(BASE_URL, config) {
               );
               err.code = errBody.code || response.status;
               err.data = errBody;
-              // 401 登录过期不弹 toast，其余错误统一在此提示
-              if (err.code !== 401) {
+              // 401 登录过期不弹 toast，其余错误统一在此提示；
+              // config.silent 用于高频调用（如播放进度上报），失败不打扰用户
+              if (err.code !== 401 && !config.silent) {
                 showError(errBody, response.status);
               }
               throw err;

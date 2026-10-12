@@ -295,6 +295,73 @@ export function saveUrlConfig(data) {
   });
 }
 
+// 用户数据：观看历史与个性化设置（按用户名）；高频调用加 silent，失败不弹提示
+export function getUserData(params) {
+  return request(BASE_URL,{
+    url: "/getUserData",
+    method: "get",
+    params,
+    silent: true,
+  });
+}
+
+export function getHistory(params) {
+  return request(BASE_URL,{
+    url: "/getHistory",
+    method: "get",
+    params,
+    silent: true,
+  });
+}
+
+export function saveHistory(data) {
+  return request(BASE_URL,{
+    url: "/saveHistory",
+    method: "post",
+    data,
+    silent: true,
+  });
+}
+
+export function saveUserSettings(data) {
+  return request(BASE_URL,{
+    url: "/saveUserSettings",
+    method: "post",
+    data,
+    silent: true,
+  });
+}
+
+export function getBackendStatus() {
+  return request(BASE_URL,{
+    url: "/getBackendStatus",
+    method: "get",
+  });
+}
+
+export function getScanConfig() {
+  return request(BASE_URL,{
+    url: "/getScanConfig",
+    method: "get",
+  });
+}
+
+export function saveScanConfig(data) {
+  return request(BASE_URL,{
+    url: "/saveScanConfig",
+    method: "post",
+    data,
+  });
+}
+
+// 立刻触发一次媒体库扫描
+export function scanLibrary() {
+  return request(BASE_URL,{
+    url: "/scanLibrary",
+    method: "post",
+  });
+}
+
 export function getBackendVersions(params) {
   return request(BASE_URL,{
     url: "/getBackendVersions",
@@ -333,6 +400,51 @@ export function bangumiList(params) {
     url: "/bangumiList",
     method: "get",
     params,
+  });
+}
+
+// 番剧详情页：animeId（本地番剧）与 bgmId（时间表）二选一
+export function bangumiDetail(params) {
+  return request(BASE_URL,{
+    url: "/bangumiDetail",
+    method: "get",
+    params,
+  });
+}
+
+// 手动重新识别：本地番剧库中已识别的作品
+export function localBangumi(params) {
+  return request(BASE_URL,{
+    url: "/localBangumi",
+    method: "get",
+    params,
+  });
+}
+
+// 手动重新识别：在弹弹play 上搜索番剧
+export function searchAnime(params) {
+  return request(BASE_URL,{
+    url: "/searchAnime",
+    method: "get",
+    params,
+  });
+}
+
+// 手动重新识别：某个作品的剧集列表
+export function animeEpisodes(params) {
+  return request(BASE_URL,{
+    url: "/animeEpisodes",
+    method: "get",
+    params,
+  });
+}
+
+// 手动重新识别：把指定文件改判到某个作品与剧集
+export function rematchFile(data) {
+  return request(BASE_URL,{
+    url: "/rematchFile",
+    method: "post",
+    data,
   });
 }
 

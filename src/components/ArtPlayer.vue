@@ -9,6 +9,7 @@ import tw from "artplayer/dist/i18n/zh-tw.js";
 import { translate } from '@/utils/translate';
 import artplayerPluginJassub from '@/utils/artplayerPluginJassub';
 import { getFontList } from '@/api/yzrServer';
+import { loadPlayRecord, savePlayRecord, savePlayRecordBeacon } from '@/utils/playHistory';
 
 // 空字幕：切换到无字幕视频时用于清空已加载的字幕轨道
 const EMPTY_SUBTITLE_URL = "data:text/vtt;base64," + btoa("WEBVTT\n\n");
@@ -25,6 +26,8 @@ export default {
       lang: "zh-cn",
       isMobile: false,
       currentVideoId: "",
+      // 已载入播放器的弹幕信息（{videoId, count}），用于判断后台拉到新弹幕时才重载
+      danmukuLoaded: null,
     };
   },
   watch: {
@@ -41,15 +44,13 @@ export default {
       type: String,
       required: true,
     },
-    videoPath: {
-      type: String,
-      default: "",
-    },
   },
   mounted() {
     this.getLang();
     this.detectMobile();
     this.initPlayer();
+    // 关闭标签页 / 刷新 / 跳转外部链接时保存播放进度
+    window.addEventListener("pagehide", this.saveOnPageLeave);
   },
   methods: {
     translate,
@@ -69,8 +70,6 @@ export default {
     },
     
     getDanmukuConfig(videoId) {
-      const danmukuUrl = `/yzr/comment?videoId=${videoId}`;
-      
       const baseConfig = {
         visible: true,
         modes: [0, 1, 2],
@@ -106,11 +105,138 @@ export default {
       }
       
       return {
-        danmuku: danmukuUrl,
+        danmuku: () => this.fetchDanmuku(videoId),
         ...userSettings,
       };
     },
+
+    // 拉取该视频的弹幕（后端按本地文件 ID 找到对应弹幕库）：
+    // 有缓存先用缓存立即播放，同时后台再拉一次，拉到新弹幕才重新载入
+    async fetchDanmuku(videoId) {
+      const result = await this.requestDanmuku(videoId, false);
+      this.danmukuLoaded = { videoId, count: result.items.length };
+      if (result.cached) {
+        this.refreshDanmuku(videoId);
+      }
+      return result.items;
+    },
+
+    // 后台重新拉取弹幕（与缓存合并由后端完成），只有弹幕变多时才替换播放器里的弹幕，
+    // 避免每次打开视频都清空重放一遍弹幕层
+    async refreshDanmuku(videoId) {
+      const result = await this.requestDanmuku(videoId, true);
+      const loaded = this.danmukuLoaded;
+      if (!result.items.length || !loaded || loaded.videoId !== videoId) return;
+      if (result.items.length <= loaded.count) return;
+      // 合并结果已包含原弹幕，直接整体替换（load 带参数是追加，必须走无参重载）
+      this.applyDanmuku(videoId, result.items);
+    },
+
+    // 用合并后的弹幕整体替换播放器里的弹幕
+    // （load 带参数是往队列追加，必须改弹幕源后用无参 load 触发清空重载）
+    applyDanmuku(videoId, items) {
+      const plugin =
+        this.instance &&
+        this.instance.plugins &&
+        this.instance.plugins.artplayerPluginDanmuku;
+      if (!plugin || typeof plugin.load !== "function") return;
+      this.danmukuLoaded = { videoId, count: items.length };
+      // plugin.option 是只读 getter，只能改它返回对象的属性
+      plugin.option.danmuku = items;
+      Promise.resolve(plugin.load()).catch((error) => {
+        console.error("[danmuku] 重新载入弹幕失败:", error);
+      });
+    },
+
+    // 请求 /yzr/comment；refresh 为 true 时要求后端重新拉取并与缓存合并
+    async requestDanmuku(videoId, refresh) {
+      try {
+        const query = new URLSearchParams({ videoId });
+        if (refresh) {
+          query.set("refresh", "1");
+        }
+        const res = await fetch(`/yzr/comment?${query.toString()}`);
+        if (!res.ok) {
+          return { items: [], cached: false };
+        }
+        const data = await res.json();
+        return {
+          items: data.code === 200 && Array.isArray(data.data) ? data.data : [],
+          cached: res.headers.get("X-Danmaku-Cached") === "1",
+        };
+      } catch (error) {
+        console.error("[danmuku] 获取弹幕失败:", error);
+        return { items: [], cached: false };
+      }
+    },
     
+    // 打开/切换视频即视为已观看，并恢复上次播放进度
+    async onVideoOpened() {
+      const videoId = this.currentVideoId;
+      const record = await loadPlayRecord(videoId);
+      // 请求期间可能已切换到别的视频
+      if (videoId !== this.currentVideoId) return;
+      // 标记已观看：沿用已保存的进度，避免开播瞬间把进度覆盖成 0；
+      // 写入后通知父组件刷新选集列表，让「已观看」状态立即一致
+      this.reportHistory(record).then(() => this.$emit("history-updated"));
+      this.applyResumePosition(record);
+    },
+
+    // 上报播放进度：progress 传入时直接沿用（打开时用于标记已观看，不覆盖已有进度），
+    // 否则取播放器当前进度（切换集数 / 销毁 / 离开页面时使用）
+    reportHistory(progress) {
+      const video = this.instance && this.instance.video;
+      if (!this.currentVideoId) return Promise.resolve();
+      if (!video && !progress) return Promise.resolve();
+      const position = progress
+        ? Number(progress.position) || 0
+        : video.currentTime || 0;
+      const duration = progress
+        ? Number(progress.duration) || 0
+        : video.duration || 0;
+      return savePlayRecord({
+        videoId: this.currentVideoId,
+        position,
+        duration,
+      });
+    },
+
+    // 离开页面（关闭标签页 / 刷新 / 跳转外部链接）时兜底保存播放进度：
+    // 用 sendBeacon 保证请求在页面卸载时也能正常发出
+    saveOnPageLeave() {
+      const video = this.instance && this.instance.video;
+      if (!video || !this.currentVideoId) return;
+      savePlayRecordBeacon({
+        videoId: this.currentVideoId,
+        position: video.currentTime || 0,
+        duration: video.duration || 0,
+      });
+    },
+
+    // 恢复上次进度并跳转；接近结尾（视为已看完）则从头播放
+    applyResumePosition(record) {
+      if (!record || !this.instance || !this.instance.video) return;
+
+      const position = Number(record.position) || 0;
+      const duration = Number(record.duration) || 0;
+      if (position < 5) return;
+      if (duration && position > duration - 15) return;
+
+      const video = this.instance.video;
+      const seek = () => {
+        try {
+          video.currentTime = position;
+        } catch (error) {
+          console.error("恢复播放进度失败:", error);
+        }
+      };
+      if (video.readyState >= 1) {
+        seek();
+      } else {
+        this.instance.once("video:loadedmetadata", seek);
+      }
+    },
+
     initPlayer() {
       if (this.instance) {
         return;
@@ -119,7 +245,7 @@ export default {
       this.currentVideoId = this.videoId;
       
       this.$nextTick(() => {
-        this.getVideoUrls(this.videoId, this.videoPath).then(urls => {
+        this.getVideoUrls(this.videoId).then(urls => {
           this.createPlayer(urls);
         });
       });
@@ -207,6 +333,8 @@ export default {
           console.error("播放器错误:", error);
         });
         
+        this.onVideoOpened();
+        
         // 首个字幕为 ass 时用 jassub 渲染（内置会把 ass 转成 vtt）
         if (firstSubtitle && ASS_TYPES.includes(firstSubtitle.type)) {
           this.applySubtitle(firstSubtitle);
@@ -222,17 +350,19 @@ export default {
       if (!this.instance) {
         this.currentVideoId = newVideoId;
         this.$nextTick(() => {
-          this.getVideoUrls(newVideoId, this.videoPath).then(urls => {
+          this.getVideoUrls(newVideoId).then(urls => {
             this.createPlayer(urls);
           });
         });
         return;
       }
       
+      // 切换集数前先保存当前集进度（此时 currentVideoId 仍指向前一集）
+      this.reportHistory();
+
       this.currentVideoId = newVideoId;
       
-      this.getVideoUrls(newVideoId, this.videoPath).then(urls => {
-        const newDanmuku = `/yzr/comment?videoId=${newVideoId}`;
+      this.getVideoUrls(newVideoId).then(urls => {
         this.externalFonts = urls.fonts || [];
         // 重建 ASS 渲染器，以便加载新视频目录下的字幕组字体
         this.resetJassub();
@@ -251,9 +381,14 @@ export default {
           if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
             const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
             if (typeof danmukuPlugin.load === 'function') {
-              danmukuPlugin.load(newDanmuku);
+              // 换弹幕源后走无参 load：带参数是往队列追加，会把上一集的弹幕留在里面
+              danmukuPlugin.option.danmuku = () => this.fetchDanmuku(newVideoId);
+              danmukuPlugin.load();
             }
           }
+          
+          // 切换视频后同样记为已观看并恢复该集进度
+          this.onVideoOpened();
           
         } catch (error) {
           console.error("切换视频失败:", error);
@@ -275,6 +410,8 @@ export default {
     },
     
     destroyPlayer() {
+      // 销毁前记录最终播放进度
+      this.reportHistory();
       this.resetJassub();
       
       if (this.instance) {
@@ -302,41 +439,20 @@ export default {
       }
     },
     
-    async getVideoUrls(videoId, path) {
+    // 获取播放所需资源：视频流、封面、进度条预览、字幕与字体，
+    // 全部只传视频 ID，由后端从本地番剧库反查路径
+    async getVideoUrls(videoId) {
+      const videoQuery = new URLSearchParams({ videoId }).toString();
       try {
-        const query = new URLSearchParams({ videoId });
-        if (path) {
-          query.set("path", path);
-        }
-        const streamRes = await fetch(`/yzr/stream?${query.toString()}`);
+        // 视频流地址由前端直接拼接：后端 /videoStream 按 videoId 直读本地文件，
+        // 浏览器会自动补上当前 host，因此局域网与外网访问都能正常播放
+        const streamUrl = `/yzr/videoStream?${videoQuery}`;
+        const posterUrl = `/yzr/poster?${videoQuery}`;
+        const thumbnails = await this.getThumbnails(videoQuery);
+        const subtitles = await this.getSubtitleList(videoId);
+        const fonts = await this.loadExternalFonts(videoId);
         
-        if (!streamRes.ok) {
-          console.error('[getVideoUrls] 获取视频流失败:', streamRes.status);
-          throw new Error(`获取视频流失败: ${streamRes.status}`);
-        }
-        
-        const streamData = await streamRes.json();
-        
-        // 后端返回相对地址（本地文件直读 / 回退代理），浏览器会自动补上当前访问的 host，
-        // 因此局域网与外网访问都能正常播放
-        // 封面与进度条预览缩略图均由后端用 ffmpeg 从本地视频生成
-        const pathQuery = new URLSearchParams({ path }).toString();
-        const posterUrl = path
-          ? `/yzr/poster?${pathQuery}`
-          : `/api/api/v1/image/id/${videoId}`;
-        const thumbnails = path ? await this.getThumbnails(pathQuery) : null;
-        // 字幕列表（外挂 + 内封）同样由后端从本地获取
-        const subtitles = path ? await this.getSubtitleList(path) : [];
-        // 字幕组随片提供的外挂字体（同目录 / fonts 子目录），供 ASS 渲染使用
-        const fonts = path ? await this.loadExternalFonts(path) : [];
-        
-        return {
-          streamUrl: streamData.url,
-          posterUrl,
-          thumbnails,
-          subtitles,
-          fonts
-        };
+        return { streamUrl, posterUrl, thumbnails, subtitles, fonts };
       } catch (error) {
         console.error('获取视频URL失败:', error);
         ElMessage.error('获取视频信息失败: ' + error.message);
@@ -351,9 +467,9 @@ export default {
     },
     
     // 获取进度条预览缩略图的布局信息（精灵图 + 网格参数）
-    async getThumbnails(pathQuery) {
+    async getThumbnails(videoQuery) {
       try {
-        const res = await fetch(`/yzr/thumbnails?${pathQuery}`);
+        const res = await fetch(`/yzr/thumbnails?${videoQuery}`);
         if (!res.ok) {
           console.error('[getThumbnails] 获取缩略图信息失败:', res.status);
           return null;
@@ -371,9 +487,9 @@ export default {
     },
     
     // 获取本地字幕列表（外挂 + 内封）
-    async getSubtitleList(path) {
+    async getSubtitleList(videoId) {
       try {
-        const res = await fetch(`/yzr/getSubtitleList?${new URLSearchParams({ path })}`);
+        const res = await fetch(`/yzr/getSubtitleList?${new URLSearchParams({ videoId })}`);
         if (!res.ok) {
           return [];
         }
@@ -387,9 +503,9 @@ export default {
     
     // 获取字幕组随片提供的外挂字体地址（同目录 / fonts 子目录）
     // 失败或无字体时返回空数组，由插件回退到内置中文字体
-    async loadExternalFonts(path) {
+    async loadExternalFonts(videoId) {
       try {
-        const data = await getFontList({ path });
+        const data = await getFontList({ videoId });
         if (!data || data.code !== 200 || !Array.isArray(data.data)) {
           return [];
         }
@@ -508,6 +624,7 @@ export default {
   },
   
   beforeUnmount() {
+    window.removeEventListener("pagehide", this.saveOnPageLeave);
     this.destroyPlayer();
   },
 };

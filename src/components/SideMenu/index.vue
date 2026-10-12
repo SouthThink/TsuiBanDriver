@@ -1,7 +1,7 @@
 <template>
   <div class="side-menu">
     <el-menu :default-active="route.path" :router="true" class="menu-main">
-      <el-menu-item v-for="item in mainMenuItems" :key="item.path" :index="item.path">
+      <el-menu-item v-for="item in visibleMainMenuItems" :key="item.path" :index="item.path">
         <el-icon><component :is="item.icon" /></el-icon>
         <span>{{ translate(item.label) }}</span>
       </el-menu-item>
@@ -16,11 +16,18 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { mainMenuItems, bottomMenuItems } from "@/utils/menu";
 import { translate } from "@/utils/translate";
+import { qBittorrentEnabled } from "@/utils/backendStatus";
 
 const route = useRoute();
+
+// 未绑定 qBittorrent 时隐藏订阅、下载菜单
+const visibleMainMenuItems = computed(() =>
+  mainMenuItems.filter((item) => !item.qbitOnly || qBittorrentEnabled.value)
+);
 </script>
 
 <style scoped>

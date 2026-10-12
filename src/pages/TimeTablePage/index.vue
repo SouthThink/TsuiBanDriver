@@ -48,7 +48,7 @@
                 :imgUrl="item.images?.common || item.images?.medium"
                 :title="getTitle(item)"
                 :rating="item.rating?.score || 0"
-                @click="toSearch(item)"
+                @click="onClickItem(item)"
               />
             </el-col>
           </el-row>
@@ -72,6 +72,11 @@ const router = useRouter();
 function getUseMirror() {
   const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
   return settings.useMirror || false;
+}
+
+function getClickAction() {
+  const settings = JSON.parse(localStorage.getItem("timeTableSettings") || "{}");
+  return settings.clickAction || "openDetail";
 }
 
 const navType = [
@@ -140,9 +145,13 @@ function getTitle(item) {
   return isChinese.value ? (item.name_cn || item.name) : item.name;
 }
 
-function toSearch(item) {
-  const name = getTitle(item);
-  router.push({ name: "search", query: { q: name } });
+// 按时间表设置决定点击行为：进详情页 / 跳搜索页
+function onClickItem(item) {
+  if (getClickAction() === "openDetail") {
+    router.push({ name: "animeDetail", query: { bgmId: item.id } });
+    return;
+  }
+  router.push({ name: "search", query: { q: getTitle(item) } });
 }
 </script>
 

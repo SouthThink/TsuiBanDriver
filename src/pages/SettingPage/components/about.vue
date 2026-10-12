@@ -1,11 +1,12 @@
 <template>
-  <div class="about-container" v-for="(item, index) in aboutList" :key="index">
+  <!-- 直接渲染为设置行，与其它设置分类保持一致的分隔线样式 -->
+  <template v-for="(item, index) in aboutList" :key="index">
     <div class="setting-item" v-if="item.name !== '分割线'">
       <el-text>{{ translate(item.name) }}</el-text>
       <!-- <el-link :href="item.href">{{ item.value }}</el-link> -->
       <el-link @click="openHref(item.href)">{{ item.value }}</el-link>
     </div>
-  </div>
+  </template>
 </template>
 <script setup>
 import { ref } from "vue";

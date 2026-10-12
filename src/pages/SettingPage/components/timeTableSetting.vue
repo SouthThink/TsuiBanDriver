@@ -10,9 +10,9 @@
       @change="saveSetting"
       style="max-width: 60%; width: 240px"
     >
+      <el-option :label="translate('打开番剧详情')" value="openDetail" />
       <el-option :label="translate('跳转搜索页面并搜索')" value="searchAndGo" />
       <el-option :label="translate('跳转搜索页面')" value="searchOnly" />
-      <el-option :label="translate('打开番剧详情') + translate('（未完成）')" value="openDetail" disabled />
     </el-select>
   </div>
 </template>
@@ -25,11 +25,11 @@ var timeTableSettings = JSON.parse(localStorage.getItem("timeTableSettings"));
 if (!timeTableSettings) {
   timeTableSettings = {
     useMirror: false,
-    clickAction: "searchAndGo",
+    clickAction: "openDetail",
   };
   localStorage.setItem("timeTableSettings", JSON.stringify(timeTableSettings));
 } else if (!timeTableSettings.clickAction) {
-  timeTableSettings.clickAction = "searchAndGo";
+  timeTableSettings.clickAction = "openDetail";
   localStorage.setItem("timeTableSettings", JSON.stringify(timeTableSettings));
 }
 

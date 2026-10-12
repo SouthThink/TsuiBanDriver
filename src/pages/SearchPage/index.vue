@@ -30,8 +30,8 @@
         :empty-text="translate('未找到字幕组')"
       >
         <el-table-column property="subgroupname" :label="translate('名称')" />
-        <!-- /下载按钮 -->
-        <el-table-column :label="translate('操作')" width="85">
+        <!-- /下载按钮：未绑定 qBittorrent 时不提供订阅入口 -->
+        <el-table-column v-if="qBittorrentEnabled" :label="translate('操作')" width="85">
           <template #default="scope">
             <el-button type="primary" @click="getRssLinkBtn(scope.row)">
               {{ translate("订阅") }}
@@ -55,6 +55,7 @@ import { Search } from "@element-plus/icons-vue";
 import { ElNotification } from "element-plus";
 import { setSize } from "@/utils/utils";
 import { translate } from "@/utils/translate";
+import { qBittorrentEnabled } from "@/utils/backendStatus";
 
 const route = useRoute();
 const input = ref("");

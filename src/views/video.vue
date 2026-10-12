@@ -8,8 +8,8 @@
             <Artplayer
               ref="player"
               @subtitle-list="onSubtitleList"
+              @history-updated="onHistoryUpdated"
               :videoId="videoId"
-              :videoPath="videoPath"
               :style="style"
             />
           </div>
@@ -47,6 +47,7 @@
           </div>
           <el-scrollbar class="bangumi-scroll">
             <BangumiCollapse
+              ref="bangumiPanel"
               :AnimeId="AnimeId"
               :Id="videoId"
               :openInNewTab="false"
@@ -72,8 +73,6 @@ export default {
       },
       videoId: "",
       AnimeId: "",
-      videoPath: "",
-      bangumiList: [],
       title: "",
       subtitleList: [],
     };
@@ -84,7 +83,6 @@ export default {
         this.title = "";
         this.videoId = route.query.videoId;
         this.AnimeId = route.query.AnimeId;
-        this.videoPath = route.query.path || "";
         this.subtitleList = [];
       },
       immediate: true,
@@ -97,7 +95,6 @@ export default {
   mounted() {
     this.videoId = this.$route.query.videoId;
     this.AnimeId = this.$route.query.AnimeId;
-    this.videoPath = this.$route.query.path || "";
   },
   methods: {
     setTitle(title) {
@@ -111,18 +108,24 @@ export default {
     handleVideoChange(data) {
       this.videoId = data.videoId;
       this.AnimeId = data.AnimeId;
-      this.videoPath = data.path || "";
       this.title = data.title;
       document.title = data.title;
 
       this.$router.replace({
         name: "video",
-        query: { videoId: data.videoId, AnimeId: data.AnimeId, path: data.path },
+        query: { videoId: data.videoId, AnimeId: data.AnimeId },
       });
     },
     // 播放器加载完字幕列表后回传，用于侧栏展示
     onSubtitleList(list) {
       this.subtitleList = Array.isArray(list) ? list : [];
+    },
+    // 已观看状态写入后刷新右侧选集列表
+    onHistoryUpdated() {
+      const panel = this.$refs.bangumiPanel;
+      if (panel && this.AnimeId) {
+        panel.showBangumiList(this.AnimeId);
+      }
     },
     // 点击字幕：直接让播放器切换，不再刷新页面
     handleSubtitleClick(subtitle) {

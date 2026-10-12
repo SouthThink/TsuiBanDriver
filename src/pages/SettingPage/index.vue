@@ -25,7 +25,6 @@
       >
         <header class="settings-section-header">
           <h2 class="settings-section-title">{{ translate(section.label) }}</h2>
-          <p class="settings-section-desc">{{ translate(section.desc) }}</p>
         </header>
         <div class="settings-group">
           <component v-for="(comp, index) in section.components" :is="comp" :key="index" />
@@ -44,78 +43,86 @@ import {
   ChatDotRound,
   ChatLineSquare,
   Connection,
+  FolderOpened,
   InfoFilled,
   Lock,
   Search,
+  User,
 } from "@element-plus/icons-vue";
 import { translate } from "@/utils/translate";
+import userSetting from "./components/userSetting.vue";
 import darkSwitch from "./components/darkSwitch.vue";
 import language from "./components/language.vue";
 import downPageIsTableBtn from "./components/downPageIsTableBtn.vue";
 import danmakuSetting from "./components/danmakuSetting.vue";
 import timeTableSetting from "./components/timeTableSetting.vue";
 import searchSetting from "./components/searchSetting.vue";
+import scanSetting from "./components/scanSetting.vue";
 import backendSetting from "./components/backendSetting.vue";
 import authSetting from "./components/authSetting.vue";
 import about from "./components/about.vue";
 import aiSetting from "./components/aiSetting.vue";
 
 // 设置页配置：新增一个分类只需在此追加一项，导航与内容会自动生成
-// label / desc 为翻译键，components 为该分类下的设置组件（按顺序渲染）
+// label 为翻译键，components 为该分类下的设置组件（按顺序渲染）
 const settingsSections = [
+  {
+    id: "user",
+    label: "用户",
+    icon: User,
+    components: [userSetting],
+  },
   {
     id: "theme",
     label: "主题设置",
-    desc: "外观、语言与下载页展示方式",
     icon: Brush,
     components: [darkSwitch, downPageIsTableBtn, language],
   },
   {
     id: "timetable",
     label: "时间表设置",
-    desc: "新番时间表的显示与点击行为",
     icon: Calendar,
     components: [timeTableSetting],
   },
   {
     id: "search",
     label: "搜索设置",
-    desc: "搜索规则、请求头与网络代理",
     icon: Search,
     components: [searchSetting],
   },
   {
     id: "ai",
     label: "AI设置",
-    desc: "AI 对话的接口与模型配置",
     icon: ChatDotRound,
     components: [aiSetting],
   },
   {
     id: "danmaku",
     label: "弹幕设置",
-    desc: "弹幕显示范围、透明度与速度",
     icon: ChatLineSquare,
     components: [danmakuSetting],
   },
   {
+    id: "scan",
+    label: "扫描设置",
+    icon: FolderOpened,
+    components: [scanSetting],
+  },
+  {
     id: "backend",
     label: "后端设置",
-    desc: "qBittorrent 与 dandanPlay 连接信息",
     icon: Connection,
     components: [backendSetting],
   },
   {
     id: "auth",
     label: "密码保护",
-    desc: "为网页访问设置密码",
     icon: Lock,
     components: [authSetting],
   },
   {
     id: "about",
     label: "关于",
-    desc: "版本信息与项目地址",
     icon: InfoFilled,
     components: [about],
   },
@@ -259,17 +266,12 @@ onBeforeUnmount(() => {
   color: var(--el-text-color-primary);
 }
 
-.settings-section-desc {
-  margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--el-text-color-secondary);
-}
-
-/* 设置行分组：仅用细分隔线区分，不套卡片 */
+/* 设置行分组：色块卡片，组内条目之间用分隔线区分 */
 .settings-group {
   margin-top: 12px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  padding: 0 16px;
+  border-radius: 10px;
+  background: var(--el-fill-color-light);
 }
 
 .settings-copyright {
@@ -339,9 +341,16 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 52px;
-  padding: 10px 2px;
+  min-height: 56px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+/* 卡片内最后一个设置行不画分隔线。
+   末尾常跟随隐藏的对话框（.el-overlay）等非设置行元素，用 :last-child 判断会失效，
+   因此改为「后面没有其它设置行」的写法 */
+.settings-page .setting-item:not(:has(~ .setting-item)) {
+  border-bottom: none;
 }
 
 .settings-page .setting-item > :first-child {
@@ -350,9 +359,13 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  .settings-group {
+    padding: 0 12px;
+  }
+
   .settings-page .setting-item {
     gap: 10px;
-    min-height: 48px;
+    min-height: 52px;
   }
 }
 </style>

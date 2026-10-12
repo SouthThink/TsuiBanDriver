@@ -7,7 +7,12 @@ import SubscribePage from '@/pages/SubscribePage/index.vue'
 import DownloadPage from '@/pages/DownloadPage/index.vue'
 import AIChatPage from '@/pages/AIChatPage/index.vue'
 import SettingPage from '@/pages/SettingPage/index.vue'
+import AnimeDetailPage from '@/pages/AnimeDetailPage/index.vue'
 import { getAuthStatus } from '@/api/yzrServer'
+import { loadBackendStatus, qBittorrentEnabled } from '@/utils/backendStatus'
+
+// 仅在已绑定 qBittorrent 时才能访问的页面
+const QBIT_ONLY_ROUTES = ['subscribe', 'download']
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +57,12 @@ const router = createRouter({
           name: 'settings',
           component: SettingPage,
         },
+        {
+          // 番剧详情页：?animeId=（本地番剧）或 ?bgmId=（时间表）
+          path: 'anime',
+          name: 'animeDetail',
+          component: AnimeDetailPage,
+        },
       ],
     },
     {
@@ -73,12 +84,20 @@ router.beforeEach(async (to) => {
   try {
     const res = await getAuthStatus()
     const { enabled, authenticated } = res.data
-    if (!enabled || authenticated) return true
-    return { name: 'login', query: { redirect: to.fullPath } }
+    if (enabled && !authenticated) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
   } catch {
     // 后端不可用时不做拦截，避免页面完全无法访问
     return true
   }
+
+  // 未绑定 qBittorrent 时禁止进入订阅、下载页
+  await loadBackendStatus()
+  if (QBIT_ONLY_ROUTES.includes(to.name) && !qBittorrentEnabled.value) {
+    return { name: 'home' }
+  }
+  return true
 })
 
 export default router

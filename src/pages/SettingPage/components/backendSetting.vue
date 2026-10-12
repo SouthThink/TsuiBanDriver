@@ -3,12 +3,19 @@
     <!-- qBittorrent 设置 -->
     <div class="setting-item">
       <el-text>qBittorrent</el-text>
-      <el-text v-if="qbInfo.version" class="info-text">
-        {{translate("版本")}}: {{qbInfo.version}}
-      </el-text>
-      <el-button type="primary" @click="openQBDialog">
-        {{qbInfo.version ? translate("编辑") : translate("设置")}}
-      </el-button>
+      <div class="qb-actions">
+        <el-text v-if="qbInfo.version" class="info-text">
+          {{translate("版本")}}: {{qbInfo.version}}
+        </el-text>
+        <el-button type="primary" @click="openQBDialog">
+          {{qbInfo.version ? translate("编辑") : translate("设置")}}
+        </el-button>
+        <el-switch
+          v-model="qbInfo.enabled"
+          :loading="savingEnabled"
+          @change="toggleQbit"
+        />
+      </div>
     </div>
 
     <!-- qBittorrent 编辑弹窗 -->
@@ -55,44 +62,38 @@
       </template>
     </el-dialog>
 
-    <!-- dandanPlay 设置 -->
+    <!-- dandanPlay 开放 API 凭证 -->
     <div class="setting-item">
       <el-text>dandanPlay</el-text>
-      <el-text v-if="ddpInfo.version" class="info-text">
-        {{translate("版本")}}: {{ddpInfo.version}}
-      </el-text>
-      <el-button type="primary" @click="openDDPDialog">
-        {{ddpInfo.version ? translate("编辑") : translate("设置")}}
-      </el-button>
+      <div class="qb-actions">
+        <el-text v-if="ddpInfo.appId" class="info-text">{{translate("已配置")}}</el-text>
+        <el-button type="primary" @click="openDdpDialog">
+          {{ddpInfo.appId ? translate("编辑") : translate("设置")}}
+        </el-button>
+      </div>
     </div>
-
-    <!-- dandanPlay 编辑弹窗 -->
     <el-dialog
       v-model="ddpDialogVisible"
       :title="'dandanPlay ' + translate('设置')"
       width="500px"
       destroy-on-close
     >
-      <div style="display: flex; flex-direction: column; gap: 15px;">
-        <el-form label-width="80px">
-          <el-form-item :label="translate('设备IP')">
-            <el-input
-              v-model="tempDDPHost"
-              :placeholder="translate('设备IP')"
-            />
-          </el-form-item>
-          <el-form-item :label="translate('端口')">
-            <el-input
-              v-model="tempDDPPort"
-              :placeholder="translate('端口')"
-              type="number"
-            />
-          </el-form-item>
-        </el-form>
-      </div>
+      <el-form label-width="100px">
+        <el-form-item label="AppId">
+          <el-input v-model="tempAppId" placeholder="AppId" />
+        </el-form-item>
+        <el-form-item label="AppSecret">
+          <el-input
+            v-model="tempAppSecret"
+            :placeholder="ddpInfo.hasSecret ? translate('留空表示不修改') : 'AppSecret'"
+            type="password"
+            show-password
+          />
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="ddpDialogVisible = false">{{translate("取消")}}</el-button>
-        <el-button type="primary" @click="saveDDPConfig" :loading="savingDDP">{{translate("保存")}}</el-button>
+        <el-button type="primary" @click="saveDdpConfig" :loading="savingDdp">{{translate("保存")}}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -102,19 +103,24 @@
 import { ref, onMounted } from 'vue';
 import { translate } from '@/utils/translate';
 import { getUrlConfig, saveUrlConfig, getBackendVersions, testBackendConnection } from '@/api/yzrServer';
+import { loadBackendStatus } from '@/utils/backendStatus';
 import { ElMessage } from 'element-plus';
 
 const savingQB = ref(false);
-const savingDDP = ref(false);
+const savingEnabled = ref(false);
 const qbDialogVisible = ref(false);
-const ddpDialogVisible = ref(false);
 
 const tempQBHost = ref('');
 const tempQBPort = ref('');
 const tempQBUsername = ref('');
 const tempQBPassword = ref('');
-const tempDDPHost = ref('');
-const tempDDPPort = ref('');
+
+// dandanPlay 开放 API 凭证（签名模式）
+const savingDdp = ref(false);
+const ddpDialogVisible = ref(false);
+const ddpInfo = ref({ appId: '', hasSecret: false });
+const tempAppId = ref('');
+const tempAppSecret = ref('');
 
 const qbInfo = ref({
   version: '',
@@ -123,12 +129,7 @@ const qbInfo = ref({
   port: '',
   username: '',
   password: '',
-});
-
-const ddpInfo = ref({
-  version: '',
-  host: '',
-  port: '',
+  enabled: false,
 });
 
 // 加载配置
@@ -140,16 +141,15 @@ const loadConfig = async () => {
       qbInfo.value.port = res.data.qBittorrent_port || '';
       qbInfo.value.username = res.data.qBittorrent_username || '';
       qbInfo.value.password = res.data.qBittorrent_password || '';
-      ddpInfo.value.host = res.data.dandanPlay_host || '';
-      ddpInfo.value.port = res.data.dandanPlay_port || '';
-      
+      qbInfo.value.enabled = !!res.data.qBittorrent_enabled;
+      ddpInfo.value.appId = res.data.dandanPlay_app_id || '';
+      ddpInfo.value.hasSecret = !!res.data.dandanPlay_has_secret;
+
       tempQBHost.value = qbInfo.value.host;
       tempQBPort.value = qbInfo.value.port;
       tempQBUsername.value = qbInfo.value.username;
       tempQBPassword.value = qbInfo.value.password;
-      tempDDPHost.value = ddpInfo.value.host;
-      tempDDPPort.value = ddpInfo.value.port;
-      
+
       // 获取版本信息
       await loadVersions();
     }
@@ -169,9 +169,6 @@ const loadVersions = async () => {
       if (res.data.qBittorrentWebApi) {
         qbInfo.value.webApiVersion = res.data.qBittorrentWebApi;
       }
-      if (res.data.dandanPlay) {
-        ddpInfo.value.version = res.data.dandanPlay;
-      }
     }
   } catch {
     // 错误已由 request 统一提示
@@ -187,20 +184,13 @@ const openQBDialog = () => {
   qbDialogVisible.value = true;
 };
 
-// 打开 dandanPlay 弹窗
-const openDDPDialog = () => {
-  tempDDPHost.value = ddpInfo.value.host;
-  tempDDPPort.value = ddpInfo.value.port;
-  ddpDialogVisible.value = true;
-};
-
 // 保存 qBittorrent 配置
 const saveQBConfig = async () => {
   if (!tempQBHost.value || !tempQBPort.value) {
     ElMessage.error(translate('请输入完整的连接信息'));
     return;
   }
-  
+
   savingQB.value = true;
   try {
     // 先测试连接和账号密码（失败会由 request 统一提示并 reject）
@@ -212,14 +202,13 @@ const saveQBConfig = async () => {
       password: tempQBPassword.value
     });
 
-    // 连接和账号密码验证成功后保存配置
+    // 连接和账号密码验证成功后保存配置，并自动绑定 qBittorrent
     const res = await saveUrlConfig({
       qBittorrent_host: tempQBHost.value,
       qBittorrent_port: tempQBPort.value,
       qBittorrent_username: tempQBUsername.value,
       qBittorrent_password: tempQBPassword.value,
-      dandanPlay_host: ddpInfo.value.host,
-      dandanPlay_port: ddpInfo.value.port,
+      qBittorrent_enabled: true,
     });
 
     if (res.code === 200) {
@@ -230,9 +219,11 @@ const saveQBConfig = async () => {
       qbInfo.value.port = tempQBPort.value;
       qbInfo.value.username = tempQBUsername.value;
       qbInfo.value.password = tempQBPassword.value;
+      qbInfo.value.enabled = true;
       qbDialogVisible.value = false;
       ElMessage.success(translate('保存成功'));
 
+      await loadBackendStatus(true);
       // 重新加载版本信息
       await loadVersions();
     }
@@ -243,48 +234,61 @@ const saveQBConfig = async () => {
   }
 };
 
-// 保存 dandanPlay 配置
-const saveDDPConfig = async () => {
-  if (!tempDDPHost.value || !tempDDPPort.value) {
-    ElMessage.error(translate('请输入完整的连接信息'));
-    return;
-  }
-  
-  savingDDP.value = true;
+// 绑定/解绑 qBittorrent：解绑后前端隐藏订阅、下载相关功能
+const toggleQbit = async (val) => {
+  savingEnabled.value = true;
   try {
-    // 先测试连接（失败会由 request 统一提示并 reject）
-    await testBackendConnection({
-      type: 'dandanPlay',
-      host: tempDDPHost.value,
-      port: tempDDPPort.value
-    });
-
-    // 连接成功后保存配置
     const res = await saveUrlConfig({
       qBittorrent_host: qbInfo.value.host,
       qBittorrent_port: qbInfo.value.port,
       qBittorrent_username: qbInfo.value.username,
       qBittorrent_password: qbInfo.value.password,
-      dandanPlay_host: tempDDPHost.value,
-      dandanPlay_port: tempDDPPort.value,
+      qBittorrent_enabled: val,
     });
 
     if (res.code === 200) {
-      // 保存成功，立即恢复按钮状态
-      savingDDP.value = false;
+      ElMessage.success(translate('保存成功'));
+      await loadBackendStatus(true);
+    }
+  } catch {
+    // 失败时回滚开关状态，避免与后端不一致
+    qbInfo.value.enabled = !val;
+  } finally {
+    savingEnabled.value = false;
+  }
+};
 
-      ddpInfo.value.host = tempDDPHost.value;
-      ddpInfo.value.port = tempDDPPort.value;
+// 打开 dandanPlay 凭证弹窗
+const openDdpDialog = () => {
+  tempAppId.value = ddpInfo.value.appId;
+  tempAppSecret.value = '';
+  ddpDialogVisible.value = true;
+};
+
+// 保存 dandanPlay 凭证：密钥留空表示不修改
+const saveDdpConfig = async () => {
+  const appId = tempAppId.value.trim();
+  if (!appId) {
+    ElMessage.error(translate('请输入 AppId'));
+    return;
+  }
+  savingDdp.value = true;
+  try {
+    const payload = { dandanPlay_app_id: appId };
+    const secret = tempAppSecret.value.trim();
+    if (secret) payload.dandanPlay_app_secret = secret;
+
+    const res = await saveUrlConfig(payload);
+    if (res.code === 200) {
+      ddpInfo.value.appId = appId;
+      if (secret) ddpInfo.value.hasSecret = true;
       ddpDialogVisible.value = false;
       ElMessage.success(translate('保存成功'));
-
-      // 重新加载版本信息
-      await loadVersions();
     }
   } catch {
     // 错误已由 request 统一提示
   } finally {
-    savingDDP.value = false;
+    savingDdp.value = false;
   }
 };
 
@@ -294,8 +298,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.qb-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .info-text {
-  margin-right: 15px;
+  color: var(--el-text-color-secondary);
+}
+
+.qb-tip {
+  margin: 0;
+  padding: 6px 2px 10px;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--el-text-color-secondary);
 }
 </style>
