@@ -92,7 +92,7 @@
       </template>
     </el-dialog>
 
-    <!-- 重启后端：在「关于」中连续点击后端版本号 10 次后显示，替换 exe 后用它加载新版本 -->
+    <!-- 重启后端：在「关于」中连续点击后端版本号 10 次后显示 -->
     <div class="setting-item" v-if="restartUnlocked">
       <el-text>{{translate("重启后端")}}</el-text>
       <el-button type="warning" :loading="restarting" @click="handleRestart">
@@ -301,7 +301,7 @@ const saveDdpConfig = async () => {
   }
 };
 
-// 重启后端：后端启动新的 exe 并退出当前进程，替换 exe 后调用即可完成更新
+// 重启后端：后端启动新进程并退出旧进程，用于让改动生效或恢复异常状态
 const restarting = ref(false);
 
 const handleRestart = async () => {
