@@ -69,6 +69,8 @@ export default {
       // 字幕：当前视频是否有字幕（决定「字幕」开关是否显示）、字幕是否显示（决定「字幕偏移」是否显示）
       hasSubtitle: false,
       subtitleVisible: true,
+      // 当前字幕偏移（秒），作为唯一来源：srt/vtt 写进内置轨道，ass 写进 jassub 的 timeOffset
+      subtitleOffset: 0,
       currentVideoId: "",
       // 已载入播放器的弹幕信息（{videoId, count}），用于判断后台拉到新弹幕时才重载
       danmukuLoaded: null,
@@ -737,18 +739,45 @@ export default {
     
     // 字幕偏移设置项：Artplayer 内置项固定 ±10s，这里自己建一个 ±30s 的
     buildSubtitleOffsetSetting() {
-      const offset = (this.instance && this.instance.subtitleOffset) || 0;
       return {
         name: SUBTITLE_OFFSET_NAME,
         html: this.translate("字幕偏移"),
-        tooltip: `${offset}s`,
+        tooltip: `${this.subtitleOffset}s`,
         icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48"><path fill="#ffffff" fill-rule="evenodd" d="M24 6a18 18 0 1 1 0 36 18 18 0 0 1 0-36zM24 12a12 12 0 1 0 0 24 12 12 0 0 0 0-24z"/><path fill="#ffffff" d="M22 14h4v10h7v4h-11z"/></svg>',
-        range: [offset, ...SUBTITLE_OFFSET_RANGE.slice(1)],
-        onChange(item) {
-          this.subtitleOffset = item.range[0];
+        range: [this.subtitleOffset, ...SUBTITLE_OFFSET_RANGE.slice(1)],
+        onChange: (item) => {
+          this.applySubtitleOffset(item.range[0]);
           return `${item.range[0]}s`;
         },
       };
+    },
+    
+    // 应用字幕偏移（秒）。Artplayer 的 subtitleOffset setter 把值夹在 ±10s，所以这里自己实现：
+    // 内置轨道（srt/vtt）直接重算每条 cue 的时间，ass 交给 jassub（它每帧按 mediaTime + timeOffset 渲染）
+    applySubtitleOffset(value, notify = true) {
+      this.subtitleOffset = value;
+      const art = this.instance;
+      if (!art) return;
+      const track = art.template.$track;
+      const cues = art.subtitle ? art.subtitle.cues : [];
+      if (track && cues.length) {
+        track.offset = value;
+        for (const cue of cues) {
+          cue.originalStartTime = cue.originalStartTime ?? cue.startTime;
+          cue.originalEndTime = cue.originalEndTime ?? cue.endTime;
+          cue.startTime = Math.min(Math.max(cue.originalStartTime + value, 0), art.duration);
+          cue.endTime = Math.min(Math.max(cue.originalEndTime + value, 0), art.duration);
+        }
+        art.subtitle.update();
+      }
+      if (this.jassub) {
+        this.jassub.timeOffset = value;
+        // 暂停时不会自动出帧，手动重绘一次让偏移立刻可见
+        Promise.resolve(this.jassub.ready)
+          .then(() => this.jassub.resize(true))
+          .catch(() => {});
+      }
+      if (notify) art.notice.show = `${this.translate("字幕偏移")}: ${value}s`;
     },
     
     // 构造内置字幕配置（仅 vtt/srt；ass 交给 jassub，不能进入内置以免被转成 vtt）
@@ -785,8 +814,14 @@ export default {
       if (notify && item) {
         option.name = item.name;
       }
-      // 加载失败时播放器内部已弹出提示，这里仅避免未处理的 Promise 拒绝
-      this.instance.subtitle.switch(url, option).catch(() => {});
+      // 加载失败时播放器内部已弹出提示，这里仅避免未处理的 Promise 拒绝；
+      // 换轨道后 cue 时间回到原生值，加载完再套用当前的字幕偏移
+      this.instance.subtitle
+        .switch(url, option)
+        .then(() => {
+          if (this.subtitleOffset) this.applySubtitleOffset(this.subtitleOffset, false);
+        })
+        .catch(() => {});
     },
     
     // ass/ssa 走 jassub：拉取后端 /yzr/getSubtitle 返回的原始 ass 文本，
@@ -800,6 +835,16 @@ export default {
           return;
         }
         const content = await res.text();
+        
+        // 内容复核：接口可能按扩展名把非 ASS 的文件标成 ass（发布组把 SRT 存成 .ass 很常见），
+        // 这种文本交给 libass 会直接解析失败并把渲染器搞坏，这里改回内置渲染
+        const contentType = this.detectSubtitleType(content);
+        if (contentType !== "ass") {
+          console.warn(`[jassub] 该字幕内容实际是 ${contentType}，改走内置渲染:`, item.name);
+          this.releaseJassub();
+          this.applyBuiltinSubtitle({ ...item, type: contentType }, notify);
+          return;
+        }
         
         // 关闭内置字幕轨道，避免两套渲染同时显示
         this.applyBuiltinSubtitle(null);
@@ -815,6 +860,8 @@ export default {
             fonts: this.externalFonts,
           })(this.instance).instance;
         }
+        // 换轨道后套用当前的字幕偏移（jassub 每帧按 mediaTime + timeOffset 渲染）
+        this.jassub.timeOffset = this.subtitleOffset;
         this.setJassubVisible(true);
         
         if (notify) {
@@ -822,8 +869,18 @@ export default {
         }
       } catch (error) {
         console.error("[jassub] 渲染 ASS 字幕失败:", error);
+        // 销毁失败的实例：否则它会被后续 ass 字幕一直复用，一次失败拖垮全部
+        this.resetJassub();
         ElMessage.error(this.translate("获取字幕内容失败"));
       }
+    },
+    
+    // 按内容判断字幕格式（ass / srt / vtt）
+    detectSubtitleType(content) {
+      const head = content.slice(0, 4096).replace(/^\uFEFF/, "").trimStart();
+      if (head.startsWith("WEBVTT")) return "vtt";
+      if (/\[Script Info\]|\[Events\]/i.test(head)) return "ass";
+      return "srt";
     },
     
     // 释放 jassub 当前轨道并隐藏画布（保留 worker，切回 ass 时复用）
