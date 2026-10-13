@@ -9,12 +9,12 @@ import modernWasmUrl from "jassub/dist/wasm/jassub-worker-modern.wasm?url";
 // ASS 渲染层在播放器内的层级：位于视频之上、播放控件之下
 const CANVAS_Z_INDEX = 20;
 
-// 内置兜底中文字体（public/fonts 下，Noto Sans SC 400 子集）。
+// 内置兜底中文字体（public/fonts 下，HarmonyOS Sans SC 完整版）。
 // 注意：libass 是按“字体文件内部的 family 名”匹配字体的，该文件的 family 名是
-// "Noto Sans SC Thin"。libass 的默认字体（defaultFont）必须能在 availableFonts 里
+// "HarmonyOS Sans SC"。libass 的默认字体（defaultFont）必须能在 availableFonts 里
 // 解析到，否则它选不到任何字体、会直接跳过整条字幕事件（表现为画布一片空白）。
-const DEFAULT_FONT_FAMILY = "Noto Sans SC Thin";
-const DEFAULT_FONT_URL = "/fonts/noto-sans-sc-400.woff2";
+const DEFAULT_FONT_FAMILY = "HarmonyOS Sans SC";
+const DEFAULT_FONT_URL = "/fonts/harmonyos-sans-sc-regular.woff2";
 
 /**
  * ArtPlayer 的 ASS/SSA 字幕插件（基于 jassub/libass 渲染）

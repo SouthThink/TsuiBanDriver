@@ -930,10 +930,32 @@ export default {
 </style>
 
 <style>
+/* 内置字幕默认字体：HarmonyOS Sans SC 完整版（与 ASS/SSA 的 jassub 渲染共用同一份字体文件，
+   解决默认字体缺字问题）。优先用本机已安装的同名字体，没有才下载 webfont */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src:
+    local("HarmonyOS Sans SC"),
+    local("HarmonyOS_Sans_SC"),
+    url("/fonts/harmonyos-sans-sc-regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* 视频按原比例居中显示：Artplayer 默认 object-fit: fill 会把视频拉伸变形；
    配合上面的 autoSize: false，播放器高度固定为容器高度（16:9），宽幅片源上下留黑边。
    注意：网页全屏时 Artplayer 会把播放器移到 body 下，scoped 样式会失效，因此这里用全局样式 */
 .art-video-player .art-video {
   object-fit: contain;
+}
+
+.art-video-player .art-subtitle {
+  font-family:
+    "HarmonyOS Sans SC",
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Noto Sans SC",
+    sans-serif;
 }
 </style>
