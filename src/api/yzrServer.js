@@ -354,11 +354,12 @@ export function saveScanConfig(data) {
   });
 }
 
-// 立刻触发一次媒体库扫描
-export function scanLibrary() {
+// 立刻触发一次媒体库扫描，mode 为 "fast"（快速）或 "full"（完全）
+export function scanLibrary(mode = "full") {
   return request(BASE_URL,{
     url: "/scanLibrary",
     method: "post",
+    data: { mode },
   });
 }
 

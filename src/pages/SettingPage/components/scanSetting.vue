@@ -20,14 +20,39 @@
   </div>
 
   <div class="setting-item">
+    <el-text>{{ translate("自动扫描") }}</el-text>
+    <el-switch v-model="autoScanEnabled" @change="saveAutoScan" />
+  </div>
+
+  <div class="setting-item">
+    <el-text>{{ translate("扫描周期") }}</el-text>
+    <div class="scan-value">
+      <el-input-number
+        v-model="autoScanInterval"
+        :min="1"
+        :max="1440"
+        :step="10"
+        size="small"
+        @change="saveAutoScan"
+      />
+      <el-text class="scan-summary">{{ translate("分钟") }}</el-text>
+    </div>
+  </div>
+
+  <div class="setting-item">
     <el-text>{{ translate("立即扫描") }}</el-text>
-    <el-button type="primary" :loading="scanning" @click="triggerScan">
-      {{ translate("扫描") }}
-    </el-button>
+    <div class="scan-value">
+      <el-button :loading="scanning === 'fast'" @click="triggerScan('fast')">
+        {{ translate("快速扫描") }}
+      </el-button>
+      <el-button type="primary" :loading="scanning === 'full'" @click="triggerScan('full')">
+        {{ translate("完全扫描") }}
+      </el-button>
+    </div>
   </div>
   <div v-if="scanResult" class="scan-result">
     <el-alert
-      :title="translate('扫描完成')"
+      :title="scanResult.mode === 'fast' ? translate('快速扫描完成') : translate('完全扫描完成')"
       type="success"
       :closable="true"
       @close="scanResult = null"
@@ -107,6 +132,8 @@ import { translate } from "@/utils/translate";
 
 const scanPaths = ref([]);
 const scanBlacklist = ref([]);
+const autoScanEnabled = ref(true);
+const autoScanInterval = ref(30);
 
 const pathsDialogVisible = ref(false);
 const blacklistDialogVisible = ref(false);
@@ -115,7 +142,8 @@ const tempBlacklist = ref([]);
 const savingPaths = ref(false);
 const savingBlacklist = ref(false);
 
-const scanning = ref(false);
+// 当前正在进行的扫描模式（"fast" / "full"），空串表示空闲
+const scanning = ref("");
 const scanResult = ref(null);
 
 const loadScanConfig = () => {
@@ -124,6 +152,8 @@ const loadScanConfig = () => {
       if (res.code === 200 && res.data) {
         scanPaths.value = res.data.scan_paths || [];
         scanBlacklist.value = res.data.scan_blacklist || [];
+        autoScanEnabled.value = res.data.auto_scan_enabled !== false;
+        autoScanInterval.value = res.data.auto_scan_interval || 30;
       }
     })
     .catch(() => {});
@@ -182,10 +212,23 @@ const saveBlacklist = () => {
     });
 };
 
-const triggerScan = () => {
-  scanning.value = true;
+const saveAutoScan = () => {
+  saveScanConfig({
+    auto_scan_enabled: autoScanEnabled.value,
+    auto_scan_interval: autoScanInterval.value,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        ElMessage.success(translate("保存成功"));
+      }
+    })
+    .catch(() => {});
+};
+
+const triggerScan = (mode) => {
+  scanning.value = mode;
   scanResult.value = null;
-  scanLibrary()
+  scanLibrary(mode)
     .then((res) => {
       if (res.code === 200 && res.data) {
         scanResult.value = res.data;
@@ -196,7 +239,7 @@ const triggerScan = () => {
     })
     .catch(() => {})
     .finally(() => {
-      scanning.value = false;
+      scanning.value = "";
     });
 };
 

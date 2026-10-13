@@ -279,4 +279,11 @@ export default {
   简介: "Synopsis",
   评论: "Comment",
   本地剧集: "Local Episodes",
+  自动扫描: "Auto Scan",
+  扫描周期: "Scan Interval",
+  快速扫描: "Quick Scan",
+  完全扫描: "Full Scan",
+  分钟: "min",
+  快速扫描完成: "Quick scan complete",
+  完全扫描完成: "Full scan complete",
 };
