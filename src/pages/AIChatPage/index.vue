@@ -208,6 +208,7 @@ import { ref, computed, nextTick, markRaw, onMounted } from 'vue'
 import { ChatDotRound, User, Cpu, Promotion, Tools, ArrowRight, VideoPause, Plus, Delete, Expand, Fold } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { translate } from '@/utils/translate'
+import { username } from '@/utils/user'
 import SearchResult from '@/components/SearchResult/index.vue'
 import SubscribeTable from '@/components/SubscribeTable/index.vue'
 import {
@@ -331,7 +332,7 @@ const scrollToBottom = () => {
 // ---- 对话管理 ----
 const loadConversations = async () => {
   try {
-    const res = await getAiConversations()
+    const res = await getAiConversations({ username: username.value })
     if (res.code === 200 && Array.isArray(res.data)) {
       conversations.value = res.data
     }
@@ -356,7 +357,7 @@ const switchConversation = async (convId) => {
       stopGeneration()
       await sendPromise
     }
-    const res = await getAiConversation({ id: convId })
+    const res = await getAiConversation({ id: convId, username: username.value })
     if (res.code === 200 && res.data) {
       currentConvId.value = convId
       messages.value = res.data.display_messages || []
@@ -387,7 +388,7 @@ const newChat = async () => {
 
 const deleteConv = async (convId) => {
   try {
-    const res = await deleteAiConversation({ id: convId })
+    const res = await deleteAiConversation({ id: convId, username: username.value })
     if (res.code === 200) {
       if (convId === currentConvId.value) {
         currentConvId.value = null
@@ -441,6 +442,7 @@ const runSend = async () => {
       body: JSON.stringify({
         message: text,
         conversation_id: currentConvId.value,
+        username: username.value,
       }),
       signal: abortController.signal,
       credentials: 'include',

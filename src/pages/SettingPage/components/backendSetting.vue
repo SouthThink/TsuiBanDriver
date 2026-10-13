@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- qBittorrent 设置 -->
+    <!-- qBittorrent 设置：绑定状态由连接是否成功决定（未绑定即视为关），不提供手动开关 -->
     <div class="setting-item">
       <el-text>qBittorrent</el-text>
       <div class="qb-actions">
@@ -10,11 +10,6 @@
         <el-button type="primary" @click="openQBDialog">
           {{qbInfo.version ? translate("编辑") : translate("设置")}}
         </el-button>
-        <el-switch
-          v-model="qbInfo.enabled"
-          :loading="savingEnabled"
-          @change="toggleQbit"
-        />
       </div>
     </div>
 
@@ -107,7 +102,6 @@ import { loadBackendStatus } from '@/utils/backendStatus';
 import { ElMessage } from 'element-plus';
 
 const savingQB = ref(false);
-const savingEnabled = ref(false);
 const qbDialogVisible = ref(false);
 
 const tempQBHost = ref('');
@@ -129,7 +123,6 @@ const qbInfo = ref({
   port: '',
   username: '',
   password: '',
-  enabled: false,
 });
 
 // 加载配置
@@ -141,7 +134,6 @@ const loadConfig = async () => {
       qbInfo.value.port = res.data.qBittorrent_port || '';
       qbInfo.value.username = res.data.qBittorrent_username || '';
       qbInfo.value.password = res.data.qBittorrent_password || '';
-      qbInfo.value.enabled = !!res.data.qBittorrent_enabled;
       ddpInfo.value.appId = res.data.dandanPlay_app_id || '';
       ddpInfo.value.hasSecret = !!res.data.dandanPlay_has_secret;
 
@@ -158,20 +150,19 @@ const loadConfig = async () => {
   }
 };
 
-// 加载版本信息
+// 加载 qBittorrent 版本信息
+// 版本由后端实时探测：能连通才有版本，为空即视为未绑定（关）
 const loadVersions = async () => {
   try {
     const res = await getBackendVersions();
     if (res.code === 200 && res.data) {
-      if (res.data.qBittorrent) {
-        qbInfo.value.version = res.data.qBittorrent;
-      }
-      if (res.data.qBittorrentWebApi) {
-        qbInfo.value.webApiVersion = res.data.qBittorrentWebApi;
-      }
+      qbInfo.value.version = res.data.qBittorrent || '';
+      qbInfo.value.webApiVersion = res.data.qBittorrentWebApi || '';
     }
   } catch {
-    // 错误已由 request 统一提示
+    // 错误已由 request 统一提示；探测失败视为未连通
+    qbInfo.value.version = '';
+    qbInfo.value.webApiVersion = '';
   }
 };
 
@@ -184,42 +175,75 @@ const openQBDialog = () => {
   qbDialogVisible.value = true;
 };
 
-// 保存 qBittorrent 配置
+// 保存 qBittorrent 配置（绑定状态只在此时确定）
+// - 内容全空：视为解绑，保存空配置并关闭绑定
+// - 有内容：先测试连接，连不上则不保存
+// - 连接成功：保存配置，并自动把 qBittorrent 置为开启
 const saveQBConfig = async () => {
-  if (!tempQBHost.value || !tempQBPort.value) {
+  const host = tempQBHost.value.trim();
+  const port = String(tempQBPort.value || '').trim();
+  const username = tempQBUsername.value.trim();
+  const password = tempQBPassword.value;
+
+  if (!host && !port && !username && !password) {
+    // 内容全空：直接当作关闭
+    savingQB.value = true;
+    try {
+      const res = await saveUrlConfig({
+        qBittorrent_host: '',
+        qBittorrent_port: '',
+        qBittorrent_username: '',
+        qBittorrent_password: '',
+        qBittorrent_enabled: false,
+      });
+      if (res.code === 200) {
+        qbInfo.value.host = '';
+        qbInfo.value.port = '';
+        qbInfo.value.username = '';
+        qbInfo.value.password = '';
+        qbDialogVisible.value = false;
+        ElMessage.success(translate('保存成功'));
+        await loadBackendStatus(true);
+        await loadVersions();
+      }
+    } catch {
+      // 错误已由 request 统一提示
+    } finally {
+      savingQB.value = false;
+    }
+    return;
+  }
+
+  if (!host || !port) {
     ElMessage.error(translate('请输入完整的连接信息'));
     return;
   }
 
   savingQB.value = true;
   try {
-    // 先测试连接和账号密码（失败会由 request 统一提示并 reject）
+    // 先测试连接和账号密码（失败会由 request 统一提示并 reject，不保存）
     await testBackendConnection({
       type: 'qBittorrent',
-      host: tempQBHost.value,
-      port: tempQBPort.value,
-      username: tempQBUsername.value,
-      password: tempQBPassword.value
+      host,
+      port,
+      username,
+      password
     });
 
-    // 连接和账号密码验证成功后保存配置，并自动绑定 qBittorrent
+    // 连接成功才保存配置，并自动绑定 qBittorrent
     const res = await saveUrlConfig({
-      qBittorrent_host: tempQBHost.value,
-      qBittorrent_port: tempQBPort.value,
-      qBittorrent_username: tempQBUsername.value,
-      qBittorrent_password: tempQBPassword.value,
+      qBittorrent_host: host,
+      qBittorrent_port: port,
+      qBittorrent_username: username,
+      qBittorrent_password: password,
       qBittorrent_enabled: true,
     });
 
     if (res.code === 200) {
-      // 保存成功，立即恢复按钮状态
-      savingQB.value = false;
-
-      qbInfo.value.host = tempQBHost.value;
-      qbInfo.value.port = tempQBPort.value;
-      qbInfo.value.username = tempQBUsername.value;
-      qbInfo.value.password = tempQBPassword.value;
-      qbInfo.value.enabled = true;
+      qbInfo.value.host = host;
+      qbInfo.value.port = port;
+      qbInfo.value.username = username;
+      qbInfo.value.password = password;
       qbDialogVisible.value = false;
       ElMessage.success(translate('保存成功'));
 
@@ -231,30 +255,6 @@ const saveQBConfig = async () => {
     // 错误已由 request 统一提示
   } finally {
     savingQB.value = false;
-  }
-};
-
-// 绑定/解绑 qBittorrent：解绑后前端隐藏订阅、下载相关功能
-const toggleQbit = async (val) => {
-  savingEnabled.value = true;
-  try {
-    const res = await saveUrlConfig({
-      qBittorrent_host: qbInfo.value.host,
-      qBittorrent_port: qbInfo.value.port,
-      qBittorrent_username: qbInfo.value.username,
-      qBittorrent_password: qbInfo.value.password,
-      qBittorrent_enabled: val,
-    });
-
-    if (res.code === 200) {
-      ElMessage.success(translate('保存成功'));
-      await loadBackendStatus(true);
-    }
-  } catch {
-    // 失败时回滚开关状态，避免与后端不一致
-    qbInfo.value.enabled = !val;
-  } finally {
-    savingEnabled.value = false;
   }
 };
 

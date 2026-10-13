@@ -203,10 +203,11 @@ export function aiChat(data) {
   });
 }
 
-export function getAiConversations() {
+export function getAiConversations(params) {
   return request(BASE_URL,{
     url: "/aiConversations",
     method: "get",
+    params,
   });
 }
 
@@ -218,10 +219,11 @@ export function getAiConversation(params) {
   });
 }
 
-export function newAiConversation() {
+export function newAiConversation(data) {
   return request(BASE_URL,{
     url: "/newAiConversation",
     method: "post",
+    data,
   });
 }
 

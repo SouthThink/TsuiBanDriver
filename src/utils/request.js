@@ -78,7 +78,7 @@ function request(BASE_URL, config) {
           .res(async (response) => {
             const contentType = response.headers.get("content-type") || "";
             const body = await parseBody(contentType, response);
-            const isHttpError = response.status >= 400;
+            // 后端业务错误：HTTP 200 但业务 code 非 200
             const businessError =
               body &&
               typeof body === "object" &&
@@ -86,18 +86,16 @@ function request(BASE_URL, config) {
               body.code !== 200
                 ? body
                 : null;
-            if (isHttpError || businessError) {
-              const errBody =
-                businessError || (body && typeof body === "object" ? body : {});
+            if (businessError) {
               const err = new Error(
-                errBody.title || errBody.msg || `HTTP ${response.status}`
+                businessError.title || businessError.msg || `HTTP ${response.status}`
               );
-              err.code = errBody.code || response.status;
-              err.data = errBody;
+              err.code = businessError.code;
+              err.data = businessError;
               // 401 登录过期不弹 toast，其余错误统一在此提示；
               // config.silent 用于高频调用（如播放进度上报），失败不打扰用户
               if (err.code !== 401 && !config.silent) {
-                showError(errBody, response.status);
+                showError(businessError, response.status);
               }
               throw err;
             }
@@ -106,7 +104,21 @@ function request(BASE_URL, config) {
           .then(({ data }) => {
             resolve(data);
           })
-          .catch((err) => {
+          .catch(async (err) => {
+            // wretch 对非 2xx 响应不会进入 .res()，HTTP 错误统一在此解析错误体并提示
+            if (err && err.response) {
+              try {
+                const contentType = err.response.headers.get("content-type") || "";
+                const body = await parseBody(contentType, err.response.clone());
+                err.status = err.status || err.response.status;
+                err.data = body;
+                if (err.status !== 401 && !config.silent) {
+                  showError(body, err.status);
+                }
+              } catch {
+                // 错误体解析失败则忽略，保留原始错误
+              }
+            }
             reject(err);
           });
       } catch (err) {
