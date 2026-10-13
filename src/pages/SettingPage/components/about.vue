@@ -4,13 +4,14 @@
     <div class="setting-item" v-if="item.name !== '分割线'">
       <el-text>{{ translate(item.name) }}</el-text>
       <!-- <el-link :href="item.href">{{ item.value }}</el-link> -->
-      <el-link @click="openHref(item.href)">{{ item.value }}</el-link>
+      <el-link @click="onValueClick(item)">{{ item.value }}</el-link>
     </div>
   </template>
 </template>
 <script setup>
 import { ref } from "vue";
 import { getVersion } from "@/utils/version.js";
+import { countVersionClick } from "@/utils/backendRestart.js";
 import { allVersion } from "@/api/yzrServer";
 import { translate } from "@/utils/translate";
 const originList = ref([
@@ -27,7 +28,6 @@ const originList = ref([
     value: "CC BY-NC 4.0",
     href: "https://creativecommons.org/licenses/by-nc/4.0/deed.zh-hans",
   },
-  { name: "分割线" },
 ]);
 const aboutList = ref(JSON.parse(localStorage.getItem("aboutList")));
 
@@ -39,8 +39,12 @@ allVersion()
   })
   .catch(() => {});
 
-const openHref = (href) => {
-  if (!href) return;
-  window.open(href, "_blank");
+// 后端版本号兼作隐藏入口：连续点击 10 次后，「后端设置」里解锁重启按钮
+const onValueClick = (item) => {
+  if (item.name === "后端版本") {
+    countVersionClick();
+    return;
+  }
+  if (item.href) window.open(item.href, "_blank");
 };
 </script>

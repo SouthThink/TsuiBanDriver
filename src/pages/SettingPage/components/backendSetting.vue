@@ -91,15 +91,24 @@
         <el-button type="primary" @click="saveDdpConfig" :loading="savingDdp">{{translate("保存")}}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 重启后端：在「关于」中连续点击后端版本号 10 次后显示，替换 exe 后用它加载新版本 -->
+    <div class="setting-item" v-if="restartUnlocked">
+      <el-text>{{translate("重启后端")}}</el-text>
+      <el-button type="warning" :loading="restarting" @click="handleRestart">
+        {{translate("重启")}}
+      </el-button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { translate } from '@/utils/translate';
-import { getUrlConfig, saveUrlConfig, getBackendVersions, testBackendConnection } from '@/api/yzrServer';
+import { getUrlConfig, saveUrlConfig, getBackendVersions, testBackendConnection, restartBackend } from '@/api/yzrServer';
 import { loadBackendStatus } from '@/utils/backendStatus';
-import { ElMessage } from 'element-plus';
+import { restartUnlocked } from '@/utils/backendRestart';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 const savingQB = ref(false);
 const qbDialogVisible = ref(false);
@@ -289,6 +298,35 @@ const saveDdpConfig = async () => {
     // 错误已由 request 统一提示
   } finally {
     savingDdp.value = false;
+  }
+};
+
+// 重启后端：后端启动新的 exe 并退出当前进程，替换 exe 后调用即可完成更新
+const restarting = ref(false);
+
+const handleRestart = async () => {
+  try {
+    await ElMessageBox.confirm(
+      translate('重启后连接会短暂中断，需要重新加载页面，确定要重启后端吗？'),
+      translate('重启后端'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('确定'),
+        cancelButtonText: translate('取消'),
+      }
+    );
+  } catch {
+    return; // 用户取消
+  }
+
+  restarting.value = true;
+  try {
+    await restartBackend();
+    ElMessage.success(translate('后端正在重启，稍后请刷新页面'));
+  } catch {
+    // 错误已由 request 统一提示
+  } finally {
+    restarting.value = false;
   }
 };
 

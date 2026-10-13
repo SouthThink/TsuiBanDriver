@@ -489,3 +489,11 @@ export function saveAuthConfig(data) {
     data,
   });
 }
+
+// 重启后端进程：替换 exe 后调用即可启动新的 exe 完成更新
+export function restartBackend() {
+  return request(BASE_URL,{
+    url: "/restartBackend",
+    method: "post",
+  });
+}
