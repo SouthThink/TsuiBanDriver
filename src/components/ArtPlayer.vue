@@ -5,7 +5,7 @@
 <script>
 import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
-import tw from "artplayer/dist/i18n/zh-tw.js";
+import tw from "artplayer/i18n/zh-tw";
 import { translate } from '@/utils/translate';
 import artplayerPluginJassub from '@/utils/artplayerPluginJassub';
 import { getFontList } from '@/api/yzrServer';
@@ -17,6 +17,36 @@ const EMPTY_SUBTITLE_URL = "data:text/vtt;base64," + btoa("WEBVTT\n\n");
 // 需要 libass（jassub）渲染的字幕类型：内置渲染会把 ass 转成 vtt 丢失样式
 const ASS_TYPES = ["ass", "ssa"];
 
+// 项目语言 → Artplayer 语言；Artplayer 没有对应语言（如日语）时统一回退英语
+const ART_LANG_MAP = {
+  zh_CN: "zh-cn",
+  zh_TW: "tw",
+  en_US: "en",
+};
+
+// 移动端手势开关的浏览器持久化键（Artplayer 只自动保存音量、面板位置等内置状态，
+// 不会保存自定义 settings 项的开关状态，需自行存储）
+const GESTURE_SEEK_KEY = "playerGestureSeek";
+const GESTURE_FAST_FORWARD_KEY = "playerGestureFastForward";
+
+// 长按快进的触发时长（Artplayer 默认 1000ms）。关闭长按快进时改为定时器上限（约 24.8 天），
+// 让长按始终不触发——Artplayer 只在创建播放器时读取 fastForward 选项，只能这样运行期关闭
+const DEFAULT_FAST_FORWARD_TIME = Artplayer.FAST_FORWARD_TIME;
+const FAST_FORWARD_DISABLED_TIME = 2 ** 31 - 1;
+
+// 左右拖拽的容错死区（px）：横向拖动没超过这个距离不触发拖拽
+const GESTURE_DEAD_ZONE = 16;
+
+// 字幕偏移范围：[当前值, 最小值, 最大值, 步长]（单位为秒）
+const SUBTITLE_OFFSET_RANGE = [0, -30, 30, 0.1];
+
+// 字幕相关设置项的名字：这两项按需从设置面板增删（没字幕就不显示开关，字幕关闭就不显示偏移）
+const SUBTITLE_SWITCH_NAME = "subtitle-switch";
+const SUBTITLE_OFFSET_NAME = "subtitle-offset";
+
+// 电脑端长按 →（右方向键）触发倍速的等待时长（ms）
+const KEY_LONG_PRESS_TIME = 500;
+
 export default {
   data() {
     return {
@@ -25,6 +55,20 @@ export default {
       externalFonts: [],
       lang: "zh-cn",
       isMobile: false,
+      // 移动端手势开关（播放器设置面板），分别控制左右拖拽快进与长按快进
+      gestureSeekEnabled: true,
+      gestureFastForwardEnabled: true,
+      // 手势守卫：touchstart 记录拖拽起点，touchmove 按需拦截（见 bindGestureGuard）
+      gestureStart: null,
+      gestureStartPoint: null,
+      gestureGuard: null,
+      // 电脑端长按 → 快进：计时器、按下前的倍速、keyup 监听
+      keyFastForwardTimer: null,
+      keyFastForwardRate: null,
+      keyFastForwardKeyUp: null,
+      // 字幕：当前视频是否有字幕（决定「字幕」开关是否显示）、字幕是否显示（决定「字幕偏移」是否显示）
+      hasSubtitle: false,
+      subtitleVisible: true,
       currentVideoId: "",
       // 已载入播放器的弹幕信息（{videoId, count}），用于判断后台拉到新弹幕时才重载
       danmukuLoaded: null,
@@ -48,6 +92,7 @@ export default {
   mounted() {
     this.getLang();
     this.detectMobile();
+    this.initGestureSettings();
     this.initPlayer();
     // 关闭标签页 / 刷新 / 跳转外部链接时保存播放进度
     window.addEventListener("pagehide", this.saveOnPageLeave);
@@ -58,15 +103,9 @@ export default {
       this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     },
     getLang() {
-      if (localStorage.getItem("lang") === "zh-TW") {
-        this.lang = "tw";
-      } else if (localStorage.getItem("lang") === "en_US") {
-        this.lang = "en";
-      } else if (localStorage.getItem("lang") === "ja_JP") {
-        this.lang = "en";
-      } else {
-        this.lang = "zh-cn";
-      }
+      const projectLang = localStorage.getItem("lang") || "zh_CN";
+      // 与项目语言保持一致，Artplayer 缺少对应语言时回退英语
+      this.lang = ART_LANG_MAP[projectLang] || "en";
     },
     
     getDanmukuConfig(videoId) {
@@ -254,11 +293,31 @@ export default {
     createPlayer(urls) {
       const danmukuConfig = this.getDanmukuConfig(this.videoId);
       this.externalFonts = urls.fonts || [];
+      this.hasSubtitle = urls.subtitles.length > 0;
       // 首个字幕：ass 交给 jassub，其余（srt/vtt）交给内置渲染
       const firstSubtitle = urls.subtitles[0];
       const builtinSubtitle = firstSubtitle && !ASS_TYPES.includes(firstSubtitle.type)
         ? firstSubtitle
         : null;
+      // 手势开关只作用于手机端，桌面端不显示
+      const gestureSettings = this.isMobile
+        ? [
+            {
+              html: this.translate("拖拽快进"),
+              tooltip: this.gestureSeekEnabled ? this.translate("开启") : this.translate("关闭"),
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48"><path fill="#ffffff" d="M10 24l10-8v6h8v4h-8v6z"/><path fill="#ffffff" d="M38 24l-10-8v6h-8v4h8v6z"/></svg>',
+              switch: this.gestureSeekEnabled,
+              onSwitch: this.gestureSeekChange,
+            },
+            {
+              html: this.translate("长按快进"),
+              tooltip: this.gestureFastForwardEnabled ? this.translate("开启") : this.translate("关闭"),
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48"><path fill="#ffffff" d="M8 12l16 12-16 12z"/><path fill="#ffffff" d="M24 12l16 12-16 12z"/></svg>',
+              switch: this.gestureFastForwardEnabled,
+              onSwitch: this.gestureFastForwardChange,
+            },
+          ]
+        : [];
 
       try {
         const options = {
@@ -270,15 +329,8 @@ export default {
           },
           lang: this.lang,
           setting: true,
-          settings: [
-            {
-              html: this.translate("字幕"),
-              tooltip: this.translate("显示"),
-              icon: '<img width="22" heigth="22" src="/img/subtitle.svg">',
-              switch: true,
-              onSwitch: this.subtitleChange,
-            },
-          ],
+          // 字幕相关设置项（开关/偏移）按当前视频是否有字幕在创建后动态增删，见 syncSubtitleSettings
+          settings: gestureSettings,
           container: this.$refs.artRef,
           id: this.videoId,
           volume: 0.5,
@@ -286,7 +338,8 @@ export default {
           muted: false,
           autoplay: false,
           pip: false,
-          autoSize: true,
+          // 关闭 autoSize：播放器高度保持容器（16:9）的高度，视频居中留黑边（见样式里的 object-fit: contain）
+          autoSize: false,
           autoMini: false,
           screenshot: true,
           qq: true,
@@ -296,11 +349,13 @@ export default {
           aspectRatio: true,
           fullscreen: true,
           fullscreenWeb: true,
-          subtitleOffset: true,
+          // 关闭内置字幕偏移项：改用自己实现的 ±30s 版本（见 buildSubtitleOffsetSetting）
+          subtitleOffset: false,
           miniProgressBar: false,
           mutex: true,
           backdrop: true,
           playsInline: true,
+          // 左右拖拽快进 / 长按快进都固定开启，实际是否生效由各自的开关在运行期控制
           gesture: true,
           autoPlayback: true,
           airplay: true,
@@ -318,6 +373,9 @@ export default {
         }
         
         this.instance = new Artplayer(options);
+        this.syncSubtitleSettings();
+        this.bindGestureGuard();
+        this.bindKeyFastForward();
         
         this.$emit("get-instance", this.instance);
         this.$emit("subtitle-list", urls.subtitles);
@@ -364,6 +422,9 @@ export default {
       
       this.getVideoUrls(newVideoId).then(urls => {
         this.externalFonts = urls.fonts || [];
+        // 换集后字幕数量可能变化，同步改设置面板里的字幕相关项
+        this.hasSubtitle = urls.subtitles.length > 0;
+        this.syncSubtitleSettings();
         // 重建 ASS 渲染器，以便加载新视频目录下的字幕组字体
         this.resetJassub();
         
@@ -403,16 +464,133 @@ export default {
     subtitleChange(item) {
       const visible = !item.switch;
       item.tooltip = visible ? this.translate("隐藏") : this.translate("显示");
+      this.subtitleVisible = visible;
       this.instance.subtitle.show = visible;
       // ass 由 jassub 渲染，需同步控制其画布显隐
       this.setJassubVisible(visible);
+      // 字幕关闭后不再显示字幕偏移
+      this.syncSubtitleSettings();
       return visible;
+    },
+    
+    // 读取手势开关的浏览器持久化值（默认开启）
+    initGestureSettings() {
+      this.gestureSeekEnabled = localStorage.getItem(GESTURE_SEEK_KEY) !== "0";
+      this.gestureFastForwardEnabled = localStorage.getItem(GESTURE_FAST_FORWARD_KEY) !== "0";
+      this.applyFastForwardTime();
+    },
+    
+    // 长按快进关闭时把触发时长改为定时器上限，让长按始终不触发（它是 Artplayer 的公开静态量）
+    applyFastForwardTime() {
+      Artplayer.FAST_FORWARD_TIME = this.gestureFastForwardEnabled
+        ? DEFAULT_FAST_FORWARD_TIME
+        : FAST_FORWARD_DISABLED_TIME;
+    },
+    
+    // 左右拖拽快进开关：切换后立即生效并持久化
+    gestureSeekChange(item) {
+      const enabled = !item.switch;
+      item.tooltip = enabled ? this.translate("开启") : this.translate("关闭");
+      this.gestureSeekEnabled = enabled;
+      localStorage.setItem(GESTURE_SEEK_KEY, enabled ? "1" : "0");
+      return enabled;
+    },
+    
+    // 长按快进开关：切换后立即生效并持久化
+    gestureFastForwardChange(item) {
+      const enabled = !item.switch;
+      item.tooltip = enabled ? this.translate("开启") : this.translate("关闭");
+      this.gestureFastForwardEnabled = enabled;
+      localStorage.setItem(GESTURE_FAST_FORWARD_KEY, enabled ? "1" : "0");
+      this.applyFastForwardTime();
+      return enabled;
+    },
+    
+    // 左右拖拽快进的生效方式：Artplayer 只在创建播放器时按 gesture 选项绑定触摸监听，
+    // 运行期改 option 不生效，因此在播放器根节点用捕获阶段拦截「落在 video 上」的 touchmove。
+    // 拖拽的 seek 就在 touchmove 里，被拦截后即不再响应；长按快进挂在 touchstart 上，
+    // 单击播放/暂停走 click 事件，进度条拖动走进度条元素，均不受影响。
+    // 拦截时机：开关关闭、位移还没拖出容错死区。
+    bindGestureGuard() {
+      if (!this.instance) return;
+      const { $player, $video } = this.instance.template;
+      // 捕获阶段记下落在 video 上的拖拽起点，用于判断是否还在死区内
+      this.gestureStart = (event) => {
+        const touch = event.target === $video ? event.touches[0] : null;
+        this.gestureStartPoint = touch ? { x: touch.pageX, y: touch.pageY } : null;
+      };
+      this.gestureGuard = (event) => {
+        if (event.target !== $video) return;
+        if (!this.gestureSeekEnabled || this.inGestureDeadZone(event)) {
+          event.stopPropagation();
+        }
+      };
+      $player.addEventListener("touchstart", this.gestureStart, true);
+      $player.addEventListener("touchmove", this.gestureGuard, true);
+    },
+    
+    // 横向位移是否还在容错死区内（没拖够距离就不触发拖拽）
+    inGestureDeadZone(event) {
+      const start = this.gestureStartPoint;
+      const touch = event.touches[0];
+      if (!start || !touch) return false;
+      return Math.abs(touch.pageX - start.x) < GESTURE_DEAD_ZONE;
+    },
+    
+    // 电脑端：接管 →（右方向键）—— 松开时若不足 0.5s 视为短按（快进 5s），达到 0.5s 则进入 3 倍速、
+    // 松开还原。走 art.hotkey 的 remove/add，可复用 Artplayer 的焦点、输入框判断和 preventDefault；
+    // 按住时的按键重复（event.repeat）直接忽略，避免连发。
+    bindKeyFastForward() {
+      if (this.isMobile || !this.instance) return;
+      const art = this.instance;
+      for (const handler of [...(art.hotkey.keys.ArrowRight || [])]) {
+        art.hotkey.remove("ArrowRight", handler);
+      }
+      art.hotkey.add("ArrowRight", (event) => {
+        if (event.repeat) return;
+        this.keyFastForwardTimer = setTimeout(() => {
+          // 到 0.5s 还没松开：进入倍速（keyFastForwardTimer 置空用于区分长按与短按）
+          this.keyFastForwardTimer = null;
+          this.keyFastForwardRate = art.playbackRate;
+          art.playbackRate = Artplayer.FAST_FORWARD_VALUE;
+        }, KEY_LONG_PRESS_TIME);
+      });
+      // keyup 不在 Artplayer 的事件里，松开时自己收尾
+      this.keyFastForwardKeyUp = (event) => {
+        if (event.code === "ArrowRight") this.endKeyFastForward();
+      };
+      document.addEventListener("keyup", this.keyFastForwardKeyUp, true);
+    },
+    
+    // 松开 →：不足 0.5s 按短按处理（此时才快进），达到 0.5s 则只把倍速还原；
+    // seek 为 false 时用于解绑/销毁，只清理状态不触发快进
+    endKeyFastForward(seek = true) {
+      if (this.keyFastForwardTimer) {
+        clearTimeout(this.keyFastForwardTimer);
+        this.keyFastForwardTimer = null;
+        if (seek && this.instance) this.instance.forward = Artplayer.SEEK_STEP;
+        return;
+      }
+      if (this.keyFastForwardRate !== null) {
+        if (this.instance) this.instance.playbackRate = this.keyFastForwardRate;
+        this.keyFastForwardRate = null;
+      }
+    },
+    
+    // 解绑电脑端长按快进的键盘监听
+    unbindKeyFastForward() {
+      if (this.keyFastForwardKeyUp) {
+        document.removeEventListener("keyup", this.keyFastForwardKeyUp, true);
+        this.keyFastForwardKeyUp = null;
+      }
+      this.endKeyFastForward(false);
     },
     
     destroyPlayer() {
       // 销毁前记录最终播放进度
       this.reportHistory();
       this.resetJassub();
+      this.unbindKeyFastForward();
       
       if (this.instance) {
         try {
@@ -437,6 +615,10 @@ export default {
       if (this.$refs.artRef) {
         this.$refs.artRef.innerHTML = '';
       }
+      // 手势守卫绑在播放器根节点上，随播放器 DOM 一起销毁，这里只清掉引用
+      this.gestureStart = null;
+      this.gestureStartPoint = null;
+      this.gestureGuard = null;
     },
     
     // 获取播放所需资源：视频流、封面、进度条预览、字幕与字体，
@@ -513,6 +695,60 @@ export default {
       } catch {
         return [];
       }
+    },
+    
+    // 字幕相关设置项的显示规则：当前视频有字幕才显示「字幕」开关，字幕显示时才显示「字幕偏移」
+    syncSubtitleSettings() {
+      if (!this.instance) return;
+      this.syncSetting(SUBTITLE_SWITCH_NAME, this.hasSubtitle, () =>
+        this.buildSubtitleSwitchSetting()
+      );
+      this.syncSetting(
+        SUBTITLE_OFFSET_NAME,
+        this.hasSubtitle && this.subtitleVisible,
+        () => this.buildSubtitleOffsetSetting()
+      );
+    },
+    
+    // 让设置项按需存在：需要且没有就新建加入（追加在面板末尾），不需要就移出面板。
+    // Artplayer 没有隐藏设置项的接口，只能增删；每次重建对象，避免把 Artplayer 的设置项存进响应式数据
+    syncSetting(name, visible, build) {
+      const art = this.instance;
+      const exists = !!art.setting.find(name);
+      if (visible === exists) return;
+      if (exists) {
+        art.setting.remove(name);
+      } else {
+        art.setting.add(build());
+      }
+    },
+    
+    // 字幕开关设置项
+    buildSubtitleSwitchSetting() {
+      return {
+        name: SUBTITLE_SWITCH_NAME,
+        html: this.translate("字幕"),
+        tooltip: this.subtitleVisible ? this.translate("显示") : this.translate("隐藏"),
+        icon: '<img width="22" heigth="22" src="/img/subtitle.svg">',
+        switch: this.subtitleVisible,
+        onSwitch: this.subtitleChange,
+      };
+    },
+    
+    // 字幕偏移设置项：Artplayer 内置项固定 ±10s，这里自己建一个 ±30s 的
+    buildSubtitleOffsetSetting() {
+      const offset = (this.instance && this.instance.subtitleOffset) || 0;
+      return {
+        name: SUBTITLE_OFFSET_NAME,
+        html: this.translate("字幕偏移"),
+        tooltip: `${offset}s`,
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48"><path fill="#ffffff" fill-rule="evenodd" d="M24 6a18 18 0 1 1 0 36 18 18 0 0 1 0-36zM24 12a12 12 0 1 0 0 24 12 12 0 0 0 0-24z"/><path fill="#ffffff" d="M22 14h4v10h7v4h-11z"/></svg>',
+        range: [offset, ...SUBTITLE_OFFSET_RANGE.slice(1)],
+        onChange(item) {
+          this.subtitleOffset = item.range[0];
+          return `${item.range[0]}s`;
+        },
+      };
     },
     
     // 构造内置字幕配置（仅 vtt/srt；ass 交给 jassub，不能进入内置以免被转成 vtt）
@@ -633,5 +869,14 @@ export default {
 <style scoped>
 .player:deep(.art-state) {
   opacity: 0 !important;
+}
+</style>
+
+<style>
+/* 视频按原比例居中显示：Artplayer 默认 object-fit: fill 会把视频拉伸变形；
+   配合上面的 autoSize: false，播放器高度固定为容器高度（16:9），宽幅片源上下留黑边。
+   注意：网页全屏时 Artplayer 会把播放器移到 body 下，scoped 样式会失效，因此这里用全局样式 */
+.art-video-player .art-video {
+  object-fit: contain;
 }
 </style>

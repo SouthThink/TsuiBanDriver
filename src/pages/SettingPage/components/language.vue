@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { translate } from '@/utils/translate'
+import { pushUserSettings } from '@/utils/userSettings'
 const lang = ref('zh_CN')
 if (localStorage.getItem('lang')) {
   lang.value = localStorage.getItem('lang');
@@ -40,8 +41,10 @@ const langList = [
     title: '日本語'
   },
 ]
-const changeLanguage = (val: string) => {
+const changeLanguage = async (val: string) => {
     localStorage.setItem('lang', val)
+    // 立刻同步到后端：节流上报会被下面的刷新打断，否则刷新后拉取旧设置会覆盖本次选择
+    await pushUserSettings()
     //刷新页面
     window.location.reload()
 }
