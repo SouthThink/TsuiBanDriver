@@ -47,6 +47,16 @@ const SUBTITLE_OFFSET_NAME = "subtitle-offset";
 // 电脑端长按 →（右方向键）触发倍速的等待时长（ms）
 const KEY_LONG_PRESS_TIME = 500;
 
+// 音量/进度拖动中心提示：无操作后停留时长（ms）
+const CENTER_TOAST_HIDE_TIME = 500;
+
+// 中心提示图标
+const ICON_VOLUME = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12zM14 3.2v2.06a7 7 0 0 1 0 13.48v2.06a9 9 0 0 0 0-17.6z"/></svg>';
+const ICON_VOLUME_MUTE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm18.4 1.6L19 8.2l-2.4 2.4-2.4-2.4-1.4 1.4 2.4 2.4-2.4 2.4 1.4 1.4 2.4-2.4 2.4 2.4 1.4-1.4-2.4-2.4 2.4-2.4z"/></svg>';
+const ICON_SEEK = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.75-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+
 export default {
   data() {
     return {
@@ -66,6 +76,16 @@ export default {
       keyFastForwardTimer: null,
       keyFastForwardRate: null,
       keyFastForwardKeyUp: null,
+      // 暂停时自动隐藏控制栏的计时器
+      controlHideTimer: null,
+      // 鼠标滚轮调音量的监听函数
+      wheelVolumeHandler: null,
+      // 音量/进度拖动中心提示：DOM 引用与隐藏计时器
+      centerToastEl: null,
+      centerToastIconEl: null,
+      centerToastTextEl: null,
+      centerToastInnerEl: null,
+      centerToastTimer: null,
       // 字幕：当前视频是否有字幕（决定「字幕」开关是否显示）、字幕是否显示（决定「字幕偏移」是否显示）
       hasSubtitle: false,
       subtitleVisible: true,
@@ -115,9 +135,7 @@ export default {
         visible: true,
         modes: [0, 1, 2],
         heatmap: true,
-        emitter: true,
         speed: 15,
-        maxLength: 50,
         antiOverlap: true,
         synchronousPlayback: false,
         opacity: 1,
@@ -130,9 +148,7 @@ export default {
         visible: savedConfig.visible !== undefined ? savedConfig.visible : baseConfig.visible,
         modes: savedConfig.modes !== undefined ? savedConfig.modes : baseConfig.modes,
         heatmap: savedConfig.heatmap !== undefined ? savedConfig.heatmap : baseConfig.heatmap,
-        emitter: savedConfig.emitter !== undefined ? savedConfig.emitter : baseConfig.emitter,
         speed: savedConfig.speed !== undefined ? savedConfig.speed : baseConfig.speed,
-        maxLength: savedConfig.maxLength !== undefined ? savedConfig.maxLength : baseConfig.maxLength,
         antiOverlap: savedConfig.antiOverlap !== undefined ? savedConfig.antiOverlap : baseConfig.antiOverlap,
         synchronousPlayback: savedConfig.synchronousPlayback !== undefined ? savedConfig.synchronousPlayback : baseConfig.synchronousPlayback,
         opacity: savedConfig.opacity !== undefined ? savedConfig.opacity : baseConfig.opacity,
@@ -142,11 +158,12 @@ export default {
       
       if (this.isMobile) {
         userSettings.heatmap = false;
-        userSettings.emitter = false;
       }
       
       return {
         danmuku: () => this.fetchDanmuku(videoId),
+        // 不显示弹幕发送框
+        emitter: false,
         ...userSettings,
       };
     },
@@ -378,6 +395,9 @@ export default {
         this.syncSubtitleSettings();
         this.bindGestureGuard();
         this.bindKeyFastForward();
+        this.bindControlAutoHide();
+        this.bindCenterToast();
+        this.bindWheelVolume();
         
         this.$emit("get-instance", this.instance);
         this.$emit("subtitle-list", urls.subtitles);
@@ -539,6 +559,161 @@ export default {
       return Math.abs(touch.pageX - start.x) < GESTURE_DEAD_ZONE;
     },
     
+    // 暂停时也自动隐藏控制栏：Artplayer 只在 timeupdate（仅播放中触发）里隐藏，
+    // 暂停后进度条会一直停留。这里在暂停后按同样的等待时长主动隐藏，
+    // 鼠标移动 / 悬停控制栏 / 操作设置面板时重新计时，继续播放后交还给 Artplayer
+    bindControlAutoHide() {
+      if (!this.instance) return;
+      const art = this.instance;
+      const schedule = () => {
+        clearTimeout(this.controlHideTimer);
+        this.controlHideTimer = setTimeout(() => {
+          this.controlHideTimer = null;
+          if (art.playing || art.video.ended || !art.controls.show) return;
+          // 正在操作设置/控制栏或输入时保持显示，稍后再判断
+          if (art.setting.show || art.controls.isHover || art.isInput) {
+            schedule();
+            return;
+          }
+          art.controls.show = false;
+        }, Artplayer.CONTROL_HIDE_TIME);
+      };
+      art.on("video:pause", schedule);
+      art.on("video:play", () => clearTimeout(this.controlHideTimer));
+      // 控制栏每次显示（鼠标移动、点击暂停等）都重新计时
+      art.on("control", (show) => {
+        if (show && !art.playing) schedule();
+      });
+    },
+    
+    unbindControlAutoHide() {
+      clearTimeout(this.controlHideTimer);
+      this.controlHideTimer = null;
+    },
+    
+    // 音量调整 / 进度拖动提示：Artplayer 默认在左上角显示 notice，
+    // 这里改为视频中心提示（半透明圆角），并在无操作 0.5s 后隐藏
+    bindCenterToast() {
+      if (!this.instance) return;
+      const art = this.instance;
+      const $player = art.template.$player;
+      
+      const $toast = document.createElement("div");
+      $toast.className = "art-center-toast";
+      const $inner = document.createElement("div");
+      $inner.className = "art-center-toast-inner";
+      const $icon = document.createElement("span");
+      $icon.className = "art-center-toast-icon";
+      const $text = document.createElement("span");
+      $text.className = "art-center-toast-text";
+      $inner.appendChild($icon);
+      $inner.appendChild($text);
+      $toast.appendChild($inner);
+      $player.appendChild($toast);
+      
+      this.centerToastEl = $toast;
+      this.centerToastIconEl = $icon;
+      this.centerToastTextEl = $text;
+      this.centerToastInnerEl = $inner;
+      
+      // 拦截 Artplayer 的 notice：音量与跳转提示改为中心提示，其余提示保持原样。
+      // 音量提示格式固定为「Volume: 50」，跳转提示格式固定为「00:10 / 01:00」
+      const notice = art.notice;
+      const noticeDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(notice), "show");
+      const volumePrefix = `${art.i18n.get("Volume")}: `;
+      const playText = art.i18n.get("Play");
+      const pauseText = art.i18n.get("Pause");
+      const seekPattern = /^\d{2}:\d{2}(?::\d{2})? \/ \d{2}:\d{2}(?::\d{2})?$/;
+      Object.defineProperty(notice, "show", {
+        configurable: true,
+        get: () => noticeDescriptor.get.call(notice),
+        set: (msg) => {
+          if (typeof msg === "string") {
+            if (msg.startsWith(volumePrefix)) {
+              noticeDescriptor.set.call(notice, "");
+              this.showVolumeToast();
+              return;
+            }
+            if (msg === playText || msg === pauseText) {
+              noticeDescriptor.set.call(notice, "");
+              // 图标表示切换后的状态：开始播放显示暂停键，暂停显示播放键
+              this.showCenterToast(msg === playText ? ICON_PAUSE : ICON_PLAY, "", true);
+              return;
+            }
+            if (seekPattern.test(msg)) {
+              noticeDescriptor.set.call(notice, "");
+              this.showCenterToast(ICON_SEEK, msg);
+              return;
+            }
+          }
+          noticeDescriptor.set.call(notice, msg);
+        },
+      });
+      
+      // 静音切换本身不产生 notice，单独监听
+      art.on("muted", () => this.showVolumeToast());
+    },
+    
+    // iconOnly 为 true 时只显示图标、不显示背景（用于播放/暂停提示）
+    showCenterToast(icon, text, iconOnly = false) {
+      if (!this.centerToastEl) return;
+      this.centerToastIconEl.innerHTML = icon;
+      this.centerToastTextEl.textContent = text;
+      this.centerToastTextEl.style.display = iconOnly ? "none" : "";
+      this.centerToastInnerEl.classList.toggle("art-center-toast-icon-only", iconOnly);
+      this.centerToastEl.classList.add("art-center-toast-show");
+      clearTimeout(this.centerToastTimer);
+      this.centerToastTimer = setTimeout(() => {
+        this.centerToastTimer = null;
+        if (this.centerToastEl) this.centerToastEl.classList.remove("art-center-toast-show");
+      }, CENTER_TOAST_HIDE_TIME);
+    },
+    
+    showVolumeToast() {
+      if (!this.instance) return;
+      const muted = this.instance.muted || this.instance.volume === 0;
+      const text = muted
+        ? this.instance.i18n.get("Mute")
+        : `${Math.round(this.instance.volume * 100)}%`;
+      this.showCenterToast(muted ? ICON_VOLUME_MUTE : ICON_VOLUME, text);
+    },
+    
+    unbindCenterToast() {
+      clearTimeout(this.centerToastTimer);
+      this.centerToastTimer = null;
+      if (this.centerToastEl && this.centerToastEl.parentNode) {
+        this.centerToastEl.parentNode.removeChild(this.centerToastEl);
+      }
+      this.centerToastEl = null;
+      this.centerToastIconEl = null;
+      this.centerToastTextEl = null;
+      this.centerToastInnerEl = null;
+    },
+    
+    // 鼠标滚轮在播放器上滚动时调整音量；设置面板等可滚动区域不拦截
+    bindWheelVolume() {
+      if (!this.instance) return;
+      const art = this.instance;
+      const { $player } = art.template;
+      this.wheelVolumeHandler = (event) => {
+        if (event.deltaY === 0) return;
+        if (event.target.closest?.(".art-settings, .art-contextmenus, .art-selector-list, .art-volume-panel")) return;
+        event.preventDefault();
+        if (art.muted) art.muted = false;
+        const step = event.deltaY < 0 ? Artplayer.VOLUME_STEP : -Artplayer.VOLUME_STEP;
+        const volume = Math.min(1, Math.max(0, art.volume + step));
+        if (volume !== art.volume) art.volume = volume;
+      };
+      $player.addEventListener("wheel", this.wheelVolumeHandler, { passive: false });
+    },
+    
+    unbindWheelVolume() {
+      if (this.instance && this.wheelVolumeHandler) {
+        this.instance.template.$player.removeEventListener("wheel", this.wheelVolumeHandler);
+      }
+      this.wheelVolumeHandler = null;
+    },
+    
     // 电脑端：接管 →（右方向键）—— 松开时若不足 0.5s 视为短按（快进 5s），达到 0.5s 则进入 3 倍速、
     // 松开还原。走 art.hotkey 的 remove/add，可复用 Artplayer 的焦点、输入框判断和 preventDefault；
     // 按住时的按键重复（event.repeat）直接忽略，避免连发。
@@ -593,6 +768,9 @@ export default {
       this.reportHistory();
       this.resetJassub();
       this.unbindKeyFastForward();
+      this.unbindControlAutoHide();
+      this.unbindCenterToast();
+      this.unbindWheelVolume();
       
       if (this.instance) {
         try {
@@ -957,5 +1135,78 @@ export default {
     "PingFang SC",
     "Noto Sans SC",
     sans-serif;
+}
+
+/* 弹幕热力图：插件把热力图（高度 100px）的底部贴在进度条容器上沿，
+   而容器有 --art-progress-top-gap（默认 10px）的顶部内边距，导致两者之间出现 10px 空隙。
+   这里把热力图下移该内边距的距离，使其底部与进度条贴合 */
+.art-video-player .art-bottom .art-progress .art-control-heatmap {
+  top: calc(var(--art-progress-top-gap) - 100px) !important;
+}
+
+/* 音量调整 / 进度拖动提示：视频中心显示，半透明圆角，类似 B 站 */
+.art-video-player .art-center-toast {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.art-video-player .art-center-toast-show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.art-video-player .art-center-toast-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 96px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* 播放/暂停提示：只显示图标，不显示背景 */
+.art-video-player .art-center-toast-inner.art-center-toast-icon-only {
+  justify-content: center;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  border-radius: 0;
+  background-color: transparent;
+  backdrop-filter: none;
+}
+
+.art-video-player .art-center-toast-icon-only .art-center-toast-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.art-video-player .art-center-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+.art-video-player .art-center-toast-icon svg {
+  width: 100%;
+  height: 100%;
 }
 </style>
