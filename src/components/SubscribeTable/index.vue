@@ -49,9 +49,6 @@
               <div class="feed-title" :title="row.title">{{ row.title }}</div>
               <div class="feed-meta">
                 <span>{{ row.articles.length }} {{ translate('个条目') }}</span>
-                <span v-if="row.unReadNum > 0" class="feed-unread">
-                  {{ row.unReadNum }} {{ translate('条未读') }}
-                </span>
               </div>
             </div>
             <el-input
@@ -371,10 +368,6 @@ const handleCommand = (command, row) => {
   font-size: 12px;
 }
 
-.feed-unread {
-  color: var(--el-color-primary);
-}
-
 .feed-rename {
   max-width: 360px;
 }
@@ -476,6 +469,12 @@ const handleCommand = (command, row) => {
 
   .feed-title {
     font-size: 14px;
+    line-height: 1.4;
+    /* 移动端完整展示订阅名称，不再单行截断 */
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .feed-actions {

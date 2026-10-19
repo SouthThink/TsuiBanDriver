@@ -41,6 +41,17 @@
   border-radius: 10px 10px 0 0;
   transition: transform 0.3s ease;
 }
+/* 封面加载失败时的占位，避免直接显示浏览器默认的 FAILED 文本 */
+.bangumi-item-cover-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--el-fill-color-light);
+  color: var(--el-text-color-placeholder);
+  font-size: 28px;
+}
 .bangumi-item:hover .bangumi-item-img {
   transform: scale(1.06);
 }

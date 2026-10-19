@@ -1,7 +1,13 @@
 <template>
   <div class="bangumi-item">
     <div class="bangumi-item-cover">
-      <el-image :src="imgUrl" fit="cover" class="bangumi-item-img"> </el-image>
+      <el-image :src="imgUrl" fit="cover" class="bangumi-item-img">
+        <template #error>
+          <div class="bangumi-item-cover-empty">
+            <el-icon><Picture /></el-icon>
+          </div>
+        </template>
+      </el-image>
       <div class="bangumi-item-score" v-if="rating !== 0">
         <el-icon><StarFilled /></el-icon>
         <el-text>{{ rating }}</el-text>

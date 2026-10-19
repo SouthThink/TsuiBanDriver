@@ -1,241 +1,301 @@
 <template>
-  <!-- <div v-for="item in videoList">
-      <el-button type="primary" :key="item.id" @click="routeToVideo(item)">{{ item.AnimeTitle + item.EpisodeTitle }}</el-button>
-    </div> -->
-  <div class="bangumi-list">
-    <div class="topTool">
-      <el-radio-group v-model="nav" class="nav-item">
+  <div class="bangumi-page">
+    <div class="library-toolbar">
+      <el-radio-group
+        v-model="nav"
+        class="nav-tabs"
+        @change="onNavChange"
+      >
         <el-radio-button
           v-for="item in navType"
           :key="item.type"
           :value="item.type"
-          @click="getVideoList(item.type)"
-          size="default"
-          class="nav-item-button"
         >
           {{ translate(item.name) }}
         </el-radio-button>
       </el-radio-group>
       <el-input
         v-model="search"
-        class="search"
+        class="library-search"
+        :prefix-icon="Search"
         :placeholder="translate('搜索番剧')"
         clearable
-        @input="bangumiSearch"
+        @input="onSearchInput"
       />
     </div>
-    <el-skeleton :loading="loading" animated :count="3">
-      <template #template>
-        <div class="bangumi-card">
-          <el-skeleton-item class="bangumi-card-title" variant="h3" />
-          <el-row :gutter="12" class="bangumi-card-row">
-            <el-col :xs="8" :sm="6" :md="4" :lg="3" v-for="n in 6" :key="n">
-              <div class="bangumi-item">
-                <div class="bangumi-item-cover">
-                  <el-skeleton-item variant="image" class="bangumi-item-img" />
-                </div>
-                <div class="bangumi-item-info">
-                  <div class="bangumi-item-title-skeleton">
-                    <el-skeleton-item variant="text" />
-                    <el-skeleton-item variant="text" />
-                  </div>
-                </div>
-              </div>
-            </el-col>
-          </el-row>
-        </div>
-      </template>
-      <template #default>
-        <div
-          class="bangumi-card"
-          v-for="item in tagList"
-          :key="item"
-          v-show="videoList[item] !== undefined"
-        >
-          <el-text class="bangumi-card-title">{{ item }}</el-text>
-          <el-row :gutter="12" class="bangumi-card-row">
-            <el-col
-              :xs="8"
-              :sm="6"
-              :md="4"
-              :lg="3"
-              v-for="video in videoList[item]"
-              :key="video.AnimeId"
-            >
-              <BangumiCardRow
-                @click="openDetail(video)"
-                :imgUrl="getImageUrl(video.Cover)"
-                :title="video.Title"
-                :rating="video.Rating"
-                :episodeWatched="video.EpisodeWatched"
-                :episodeTotal="video.EpisodeTotal"
-                :episodeLatest="video.EpisodeLatest"
+
+    <div v-if="loading" class="skeleton-wrap">
+      <el-skeleton animated>
+        <template #template>
+          <el-skeleton-item
+            variant="h3"
+            style="width: 140px; height: 22px; margin-bottom: 12px"
+          />
+          <div class="bangumi-grid">
+            <div v-for="n in 12" :key="n" class="skeleton-card">
+              <el-skeleton-item variant="image" class="skeleton-poster" />
+              <el-skeleton-item
+                variant="text"
+                style="width: 80%; margin-top: 8px"
               />
-            </el-col>
-          </el-row>
+              <el-skeleton-item
+                variant="text"
+                style="width: 45%; margin-top: 6px"
+              />
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
+    </div>
+
+    <template v-else>
+      <section
+        v-for="group in groups"
+        :key="group.name"
+        class="bangumi-section"
+      >
+        <header class="section-head">
+          <h3 class="section-title">{{ group.name }}</h3>
+          <span class="section-count">{{ group.items.length }}</span>
+        </header>
+        <div class="bangumi-grid">
+          <BangumiCardRow
+            v-for="video in group.items"
+            :key="video.AnimeId"
+            :imgUrl="getImageUrl(video.Cover)"
+            :title="video.Title"
+            :rating="video.Rating"
+            :episodeWatched="video.EpisodeWatched"
+            :episodeTotal="video.EpisodeTotal"
+            :episodeLatest="video.EpisodeLatest"
+            @click="openDetail(video)"
+          />
         </div>
-        <el-empty description="无数据" v-show="tagList.length == 0" />
-      </template>
-    </el-skeleton>
+      </section>
+
+      <el-empty
+        v-if="groups.length === 0"
+        :image-size="100"
+        :description="translate('暂无数据')"
+      />
+    </template>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRouter } from "vue-router";
+import { Search } from "@element-plus/icons-vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
-import { translate } from '@/utils/translate'
-import { searchBangumi } from '@/api/yzrServer'
-import { username } from '@/utils/user'
-export default {
-  data() {
-    return {
-      tagList: [],
-      videoList: {},
-      loading: true,
-      cover: "",
-      search: "",
-      searchTimer: null,
-      navType: [
-        { name: "番剧季度", type: "season" },
-        { name: "最近播放", type: "lastplay" },
-        { name: "最近更新", type: "lastupdate" },
-        { name: "最近添加", type: "lastadd" },
-        { name: "名称排序", type: "name" },
-        { name: "分类排序", type: "category" },
-        { name: "评分排序", type: "rating" },
-      ],
-      nav: "season",
-    };
-  },
-  computed: {
-  },
-  created() {
-    this.getVideoList(this.nav);
-  },
-  components: {
-    BangumiCardRow,
-  },
-  computed: {},
-  methods: {
-    translate,
-    async getVideoList(e) {
-      this.loading = true;
-      this.nav = e;
-      clearTimeout(this.searchTimer);
-      try {
-        const res = await searchBangumi({ params: e, keyword: "", username: username.value });
-        this.groupByGroupName((res && res.data) || []);
-      } catch {
-        // 错误已由 request 统一提示
-      } finally {
-        this.loading = false;
-      }
-    },
-    bangumiSearch(e) {
-      clearTimeout(this.searchTimer);
-      this.searchTimer = setTimeout(() => {
-        this.fetchSearch(e);
-      }, 300);
-    },
-    async fetchSearch(keyword) {
-      this.loading = true;
-      try {
-        const res = await searchBangumi({ params: this.nav, keyword, username: username.value });
-        this.groupByGroupName((res && res.data) || []);
-      } catch {
-        // 错误已由 request 统一提示
-      } finally {
-        this.loading = false;
-      }
-    },
-    groupByGroupName(data) {
-      this.videoList = {};
-      this.tagList = [];
-      data.forEach((element) => {
-        // 按照 element.GroupName 进行分类
-        if (!this.videoList[element.GroupName]) {
-          this.videoList[element.GroupName] = [];
-          this.tagList.push(element.GroupName);
-        }
-        this.videoList[element.GroupName].push(element);
-      });
-      if (this.nav == "name") {
-        this.tagList.sort();
-      }
-    },
-    // 卡片点击进入番剧详情页
-    openDetail(video) {
-      this.$router.push({
-        name: "animeDetail",
-        query: { animeId: video.AnimeId.toString() },
-      });
-    },
-    getImageUrl(cover) {
-      if (!cover) return '';
-      try {
-        const queryIndex = cover.indexOf('?');
-        if (queryIndex === -1) return cover;
-        const queryString = cover.substring(queryIndex + 1);
-        const params = new URLSearchParams(queryString);
-        const url = params.get('url');
-        return url ? decodeURIComponent(url) : cover;
-      } catch {
-        return cover;
-      }
-    },
-  },
+import { translate } from "@/utils/translate";
+import { searchBangumi } from "@/api/yzrServer";
+import { username } from "@/utils/user";
+
+const router = useRouter();
+
+const navType = [
+  { name: "番剧季度", type: "season" },
+  { name: "最近播放", type: "lastplay" },
+  { name: "最近更新", type: "lastupdate" },
+  { name: "最近添加", type: "lastadd" },
+  { name: "名称排序", type: "name" },
+  { name: "分类排序", type: "category" },
+  { name: "评分排序", type: "rating" },
+];
+
+const nav = ref("season");
+const search = ref("");
+const loading = ref(true);
+const groups = ref([]);
+let searchTimer = null;
+
+const groupByGroupName = (data) => {
+  const map = new Map();
+  data.forEach((element) => {
+    if (!map.has(element.GroupName)) {
+      map.set(element.GroupName, []);
+    }
+    map.get(element.GroupName).push(element);
+  });
+  const list = Array.from(map, ([name, items]) => ({ name, items }));
+  if (nav.value === "name") {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  groups.value = list;
+};
+
+const loadList = async (keyword = "") => {
+  loading.value = true;
+  try {
+    const res = await searchBangumi({
+      params: nav.value,
+      keyword,
+      username: username.value,
+    });
+    groupByGroupName((res && res.data) || []);
+  } catch {
+    // 错误已由 request 统一提示
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 切换分类时保留当前搜索词
+const onNavChange = () => {
+  clearTimeout(searchTimer);
+  loadList(search.value.trim());
+};
+
+const onSearchInput = () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadList(search.value.trim()), 300);
+};
+
+onMounted(() => {
+  loadList();
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer);
+});
+
+// 卡片点击进入番剧详情页
+const openDetail = (video) => {
+  router.push({
+    name: "animeDetail",
+    query: { animeId: video.AnimeId.toString() },
+  });
+};
+
+const getImageUrl = (cover) => {
+  if (!cover) return "";
+  try {
+    const queryIndex = cover.indexOf("?");
+    if (queryIndex === -1) return cover;
+    const queryString = cover.substring(queryIndex + 1);
+    const params = new URLSearchParams(queryString);
+    const url = params.get("url");
+    return url ? decodeURIComponent(url) : cover;
+  } catch {
+    return cover;
+  }
 };
 </script>
+
 <style scoped>
-.bangumi-list {
+.bangumi-page {
+  box-sizing: border-box;
   width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 4px clamp(4px, 2.5vw, 28px) 32px;
 }
-.topTool {
+
+.library-toolbar {
   display: flex;
-  margin: auto;
-  justify-content: space-between;
-  max-width: 1500px;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-bottom: 6px;
 }
-.nav-item {
-  margin-top: 10px;
-  scrollbar-width: none;
-  overflow: scroll;
+
+.nav-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   flex-wrap: nowrap;
+  scrollbar-width: none;
 }
 
-/* .nav-item-button:deep(.el-radio-button__inner) {
-  border-radius: 20px;
-  margin-right: 10px;
-  border: 1px solid var(--el-border-color);
-} */
-
-.search {
-  margin-top: 10px;
-  max-width: 498px;
-}
-.bangumi-card-title {
-  height: 36px;
-  font-size: 1.5em;
-  font-weight: bold;
-}
-.bangumi-card-row {
-  margin-top: 6px;
+.nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
-.bangumi-card {
-  width: 100%;
-  max-width: 1500px;
-  margin: auto;
-  margin-top: 20px;
+.library-search {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+  margin-left: auto;
 }
-.bangumi-card-item {
-  width: 100%;
-  margin-top: 10px;
+
+.bangumi-section {
+  margin-top: 18px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
-  cursor: pointer;
 }
-.bangumi-drawer {
-  width: auto;
+
+.section-title {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.section-count {
+  min-width: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.bangumi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.bangumi-grid :deep(.bangumi-item) {
+  margin-top: 0;
+}
+
+.skeleton-card {
+  min-width: 0;
+}
+
+.skeleton-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  max-height: 200px;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .bangumi-page {
+    padding: 2px 4px 24px;
+  }
+
+  .library-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .library-search {
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .bangumi-section {
+    margin-top: 14px;
+  }
+
+  .section-title {
+    font-size: 15px;
+  }
+
+  .bangumi-grid {
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
 }
 </style>

@@ -11,7 +11,33 @@
     <div class="rule-layout">
       <aside class="rule-sidebar">
         <div class="sidebar-head">{{ translate("规则列表") }}</div>
-        <div class="rule-list">
+
+        <!-- 移动端折叠入口：默认只显示当前规则 -->
+        <button
+          v-if="isMobile"
+          type="button"
+          class="rule-toggle"
+          @click="rulesExpanded = !rulesExpanded"
+        >
+          <el-icon class="rule-state" :class="{ enabled: ruleData.enabled }">
+            <CircleCheck v-if="ruleData.enabled" />
+            <CircleClose v-else />
+          </el-icon>
+          <span class="rule-name">
+            {{ selectRuleName || translate("请选择规则") }}
+          </span>
+          <span class="rule-toggle-text">
+            {{ rulesExpanded ? translate("收起") : translate("展开") }}
+          </span>
+          <el-icon
+            class="rule-toggle-arrow"
+            :class="{ open: rulesExpanded }"
+          >
+            <ArrowDown />
+          </el-icon>
+        </button>
+
+        <div v-show="!isMobile || rulesExpanded" class="rule-list">
           <button
             v-for="item in ruleNameList"
             :key="item"
@@ -38,7 +64,12 @@
             :description="translate('暂无规则')"
           />
         </div>
-        <el-button class="rule-add" :icon="Plus" @click="createRule">
+        <el-button
+          v-if="!isMobile || rulesExpanded"
+          class="rule-add"
+          :icon="Plus"
+          @click="createRule"
+        >
           {{ translate("新建规则") }}
         </el-button>
       </aside>
@@ -153,9 +184,28 @@
                   class="source-item"
                 >
                   <span class="source-text">
-                    <span class="source-name">{{ item.title }}</span>
+                    <span class="source-name" :title="item.title">{{ item.title }}</span>
                     <span class="source-url">{{ item.url }}</span>
                   </span>
+                  <el-popover
+                    trigger="click"
+                    placement="top"
+                    :width="280"
+                    popper-class="source-name-popper"
+                    @click.stop
+                  >
+                    <template #reference>
+                      <el-icon
+                        class="source-view"
+                        :title="translate('查看完整名称')"
+                        @click.stop.prevent
+                      >
+                        <View />
+                      </el-icon>
+                    </template>
+                    <div class="source-pop-name">{{ item.title }}</div>
+                    <div class="source-pop-url">{{ item.url }}</div>
+                  </el-popover>
                 </el-checkbox>
               </el-checkbox-group>
             </section>
@@ -228,6 +278,8 @@ const ruleNameList = ref([]);
 const ruleInfo = ref({});
 const SubscribeList = ref([]);
 const selectRuleName = ref("");
+// 移动端规则列表是否展开（默认折叠，只显示当前规则）
+const rulesExpanded = ref(false);
 const matchingArticlesList = ref([]);
 const matchingArticlesListLoading = ref(false);
 
@@ -309,6 +361,7 @@ const resetAll = () => {
   ruleInfo.value = {};
   ruleData.value = createEmptyRule();
   selectRuleName.value = "";
+  rulesExpanded.value = false;
   matchingArticlesList.value = [];
   matchingArticlesListLoading.value = false;
   SubscribeList.value = [];
@@ -330,6 +383,7 @@ const selectRule = (name) => {
   matchingArticlesList.value = [];
   selectRuleName.value = name;
   ruleData.value = normalizeRule(ruleInfo.value[name]);
+  if (isMobile.value) rulesExpanded.value = false;
   if (ruleData.value.affectedFeeds.length > 0) getMatchingArticles();
 };
 
@@ -571,6 +625,10 @@ const saveRuleBtn = () => {
   width: 100%;
 }
 
+.rule-toggle {
+  display: none;
+}
+
 .rule-main {
   display: flex;
   flex: 1;
@@ -676,14 +734,17 @@ const saveRuleBtn = () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  min-width: 0;
 }
 
 .source-item {
   display: flex;
   align-items: center;
+  min-width: 0;
   height: auto;
   margin-right: 0 !important;
   padding: 8px 10px;
+  overflow: hidden;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   transition:
@@ -701,14 +762,18 @@ const saveRuleBtn = () => {
 }
 
 .source-item :deep(.el-checkbox__label) {
+  display: flex;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .source-text {
   display: flex;
   flex-direction: column;
+  width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .source-name {
@@ -726,6 +791,42 @@ const saveRuleBtn = () => {
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 移动端查看完整名称的入口，桌面端用 hover 的原生提示即可 */
+.source-view {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  border-radius: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.source-view:hover {
+  background-color: var(--el-fill-color-light);
+  color: var(--el-color-primary);
+}
+
+.source-pop-name {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.source-pop-url {
+  margin-top: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  word-break: break-all;
 }
 
 .matching-list {
@@ -784,8 +885,8 @@ const saveRuleBtn = () => {
   }
 
   .rule-sidebar {
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
     padding: 0 0 8px;
     border-right: 0;
@@ -796,34 +897,67 @@ const saveRuleBtn = () => {
     display: none;
   }
 
+  .rule-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    background-color: var(--el-bg-color);
+    color: var(--el-text-color-primary);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .rule-toggle .rule-name {
+    flex: 1;
+    text-align: left;
+  }
+
+  .rule-toggle-text {
+    flex-shrink: 0;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+  }
+
+  .rule-toggle-arrow {
+    flex-shrink: 0;
+    color: var(--el-text-color-secondary);
+    transition: transform 0.2s;
+  }
+
+  .rule-toggle-arrow.open {
+    transform: rotate(180deg);
+  }
+
   .rule-list {
     flex: 1;
-    flex-direction: row;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 2px;
+    max-height: 220px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .rule-item {
-    width: auto;
-    min-width: max-content;
-    padding: 6px 10px;
+    width: 100%;
+    min-width: 0;
+    padding: 7px 10px;
   }
 
   .rule-badge {
     display: none;
   }
 
-  .rule-item.active {
-    min-width: max-content;
-  }
-
   .rule-add {
-    width: auto;
-    margin-top: 0;
-    align-self: center;
+    width: 100%;
+    margin-top: 4px;
+    align-self: stretch;
   }
 
   .rule-main-head {
@@ -842,6 +976,18 @@ const saveRuleBtn = () => {
 
   .source-list {
     grid-template-columns: 1fr;
+  }
+
+  .source-name {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .source-view {
+    display: inline-flex;
   }
 
   .matching-list {
