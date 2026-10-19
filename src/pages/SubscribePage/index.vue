@@ -1,13 +1,53 @@
 <template>
   <div class="subscribe-page">
-    <el-button-group class="subscribe-button-group">
-      <el-button @click="startRefreshRssList" v-if="timer == null">
-        {{translate("刷新列表")}}
-      </el-button>
-      <el-button @click="createRss">{{translate("新建订阅")}}</el-button>
-      <el-button @click="updateAll">{{translate("更新所有")}}</el-button>
-      <el-button @click="openDownloadMsgBox">{{translate("RSS下载器")}}</el-button>
-    </el-button-group>
+    <div class="subscribe-header">
+      <div class="subscribe-summary">
+        <div class="subscribe-title-row">
+          <h2 class="subscribe-title">{{ translate("订阅列表") }}</h2>
+          <span class="subscribe-count">
+            {{ feedCount }} {{ translate("个订阅") }}
+          </span>
+        </div>
+        <div class="subscribe-meta">
+          <span v-if="unreadCount > 0" class="meta-item is-unread">
+            <el-icon><BellFilled /></el-icon>
+            {{ unreadCount }} {{ translate("条未读") }}
+          </span>
+          <span v-else class="meta-item">
+            <el-icon><CircleCheck /></el-icon>
+            {{ translate("全部已读") }}
+          </span>
+          <span v-if="timer != null" class="meta-item">
+            <span class="pulse-dot" />
+            {{ translate("自动刷新中") }}
+          </span>
+          <el-button
+            v-else
+            class="auto-refresh-button"
+            type="success"
+            size="small"
+            plain
+            :icon="Refresh"
+            @click="startRefreshRssList"
+          >
+            {{ translate("自动刷新") }}
+          </el-button>
+        </div>
+      </div>
+
+      <div class="subscribe-actions">
+        <el-button type="primary" :icon="Plus" @click="createRss">
+          {{ translate("新建订阅") }}
+        </el-button>
+        <el-button :icon="RefreshRight" @click="updateAll">
+          {{ translate("更新所有") }}
+        </el-button>
+        <el-button :icon="Download" @click="openDownloadMsgBox">
+          {{ translate("RSS下载器") }}
+        </el-button>
+      </div>
+    </div>
+
     <SubscribeTable
       :data="rssData"
       :loading="loading"
@@ -18,11 +58,16 @@
       @mark-read="makeRead"
       @download="download"
     />
-    <DownloadMsgBox @close="closeDownloadMsgBox" :download-visible="downloadVisible" />
+    <DownloadMsgBox
+      @close="closeDownloadMsgBox"
+      :download-visible="downloadVisible"
+    />
   </div>
 </template>
+
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { Plus, Refresh, RefreshRight, Download } from "@element-plus/icons-vue";
 import SubscribeTable from "@/components/SubscribeTable/index.vue";
 import {
   getRssItems,
@@ -34,12 +79,21 @@ import {
 } from "@/api/yzrServer";
 import { createDownload } from "@/utils/utils.js";
 import DownloadMsgBox from "@/components/DownloadMsgBox/index.vue";
-import { translate } from '@/utils/translate'
+import { translate } from "@/utils/translate";
 
 const rssData = ref({});
 const timer = ref(null);
 const loading = ref(false);
 const downloadVisible = ref(false);
+
+const feedCount = computed(() => Object.keys(rssData.value || {}).length);
+
+const unreadCount = computed(() =>
+  Object.values(rssData.value || {}).reduce((total, feed) => {
+    const articles = Array.isArray(feed?.articles) ? feed.articles : [];
+    return total + articles.filter((article) => !article.isRead).length;
+  }, 0)
+);
 
 // silent: 后台轮询时静默刷新，不显示"加载中"遮罩，避免界面闪烁
 const getRssList = (silent = false) => {
@@ -171,41 +225,156 @@ const createRss = () => {
 
 const makeRead = (type, row) => {
   // type: '' 表示全部已读，对象表示单个文章
-  const articleId = !type ? undefined : (typeof type === 'object' ? type.title : type);
+  const articleId = !type ? undefined : typeof type === "object" ? type.title : type;
   markAsRead({ itemPath: row.title, articleId }).catch(() => {});
 };
 
 const openDownloadMsgBox = () => {
   downloadVisible.value = true;
-}
+};
 
 const closeDownloadMsgBox = () => {
   downloadVisible.value = false;
-}
+};
 
 onMounted(() => {
   getRssList();
   downloadVisible.value = false;
   timer.value = setInterval(() => getRssList(true), 3000);
-  onUnmounted(() => {
-    clearInterval(timer.value);
-  });
+});
+
+onUnmounted(() => {
+  clearInterval(timer.value);
 });
 </script>
+
 <style scoped>
 .subscribe-page {
-  padding-left: 10%;
-  padding-right: 10%;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4px clamp(8px, 4vw, 48px) 24px;
+}
+
+.subscribe-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.subscribe-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.subscribe-title {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.subscribe-count {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.subscribe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-item.is-unread {
+  color: var(--el-color-primary);
+}
+
+.auto-refresh-button {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--el-color-success);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+.subscribe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subscribe-actions :deep(.el-button) {
+  margin-left: 0;
 }
 
 @media (max-width: 768px) {
   .subscribe-page {
-    padding: 0;
+    padding: 2px 4px 16px;
+  }
+
+  .subscribe-header {
+    align-items: stretch;
+    margin-bottom: 10px;
+  }
+
+  .subscribe-title {
+    font-size: 17px;
+  }
+
+  .subscribe-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .subscribe-actions :deep(.el-button) {
+    width: 100%;
+  }
+
+  /* 主操作独占一行，其余操作两列排布 */
+  .subscribe-actions :deep(.el-button:first-child) {
+    grid-column: 1 / -1;
   }
 }
 
-.subscribe-button-group {
-  display: flex;
-  margin-bottom: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot {
+    animation: none;
+  }
 }
 </style>

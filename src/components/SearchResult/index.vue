@@ -1,57 +1,79 @@
 <template>
   <div class="result" v-if="resultList.length > 0 || rssItems.length > 0">
-    <el-row :gutter="24" class="bangumi-card-row">
-      <el-col
-        :xs="colNum"
-        :sm="colNum"
-        :md="colNum"
-        :lg="colNum"
-        v-for="video in resultList"
-        :key="video.Id"
-      >
+    <section v-if="resultList.length > 0" class="result-section">
+      <div class="section-head">
+        <span class="section-title">{{ translate("番剧") }}</span>
+        <span class="section-count">{{ resultList.length }}</span>
+      </div>
+      <div class="bangumi-grid">
         <BangumiCardRow
+          v-for="video in resultList"
+          :key="video.Id"
           :imgUrl="video.img"
           :title="video.title"
           @click="$emit('selectBangumi', video)"
         />
-      </el-col>
-    </el-row>
+      </div>
+    </section>
 
-    <div class="table" v-if="rssItems.length > 0">
-      <el-table :data="currentPageData">
-        <el-table-column property="title" :label="translate('标题')" />
-        <!-- 未绑定 qBittorrent 时不提供订阅与下载入口 -->
-        <el-table-column v-if="qBittorrentEnabled" :label="translate('操作')" width="85" align="center">
-          <template #header>
-            <el-button type="primary" @click="addSearchRss" style="white-space: nowrap">
-              {{ translate("订阅") }}
-            </el-button>
-          </template>
-          <template #default="scope">
+    <section v-if="rssItems.length > 0" class="result-section">
+      <div class="section-head">
+        <span class="section-title">{{ translate("搜索结果") }}</span>
+        <span class="section-count">{{ rssItems.length }}</span>
+        <div class="section-actions">
+          <el-button
+            v-if="qBittorrentEnabled"
+            type="primary"
+            plain
+            size="small"
+            @click="addSearchRss"
+          >
+            {{ translate("订阅") }}
+          </el-button>
+        </div>
+      </div>
+      <div class="rss-list">
+        <div
+          v-for="(item, index) in currentPageData"
+          :key="item.guid?.['#text'] || item.link || index"
+          class="rss-item"
+        >
+          <span class="rss-index">
+            {{ (currentPage - 1) * pageSize + index + 1 }}
+          </span>
+          <span class="rss-title" :title="item.title">{{ item.title }}</span>
+          <el-tooltip
+            v-if="qBittorrentEnabled"
+            :content="translate('直接下载')"
+            effect="dark"
+            placement="top"
+            :show-after="400"
+          >
             <el-button
               type="primary"
               :icon="Download"
               circle
-              @click="handleCreateDownload(scope.row)"
+              size="small"
+              @click="handleCreateDownload(item)"
             />
-          </template>
-        </el-table-column>
-      </el-table>
+          </el-tooltip>
+        </div>
+      </div>
       <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="currentPage"
+        v-model:current-page="currentPage"
         :page-size="pageSize"
-        layout="prev, pager, next"
         :total="rssItems.length"
+        layout="prev, pager, next"
+        background
+        hide-on-single-page
         class="pagination"
       />
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Download } from '@element-plus/icons-vue'
 import BangumiCardRow from '@/components/BangumiCardRow/index.vue'
 import { createDownload } from '@/utils/utils.js'
@@ -67,24 +89,24 @@ const props = defineProps({
 defineEmits(['selectBangumi'])
 
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = 10
 
 const resultList = computed(() => props.data.bangumiItem || [])
 const rssItems = computed(() => props.data.rssItems || [])
 
 const currentPageData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = currentPage.value * pageSize.value
+  const start = (currentPage.value - 1) * pageSize
+  const end = currentPage.value * pageSize
   return rssItems.value.slice(start, end)
 })
 
-const colNum = computed(() => {
-  const map = { 4: 6, 3: 8, 2: 12, 1: 24 }
-  return map[resultList.value.length] || 6
-})
-
-const handleSizeChange = (newSize) => { pageSize.value = newSize }
-const handleCurrentChange = (newPage) => { currentPage.value = newPage }
+// 新的搜索结果返回后回到第一页
+watch(
+  () => props.data,
+  () => {
+    currentPage.value = 1
+  }
+)
 
 const handleCreateDownload = (row) => {
   createDownload(row.enclosure['@url'], row.description)
@@ -106,36 +128,126 @@ const addSearchRss = () => {
 
 <style scoped>
 .result {
-  width: 100%;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: center;
+  gap: 22px;
+  width: 100%;
 }
-.bangumi-card-row {
+
+.result-section {
+  width: 100%;
+}
+
+.section-head {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: start;
-  margin: 0 -10px;
-  max-width: 600px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-.table {
-  width: 90%;
-  margin-top: 20px;
+
+.section-title {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+  font-size: 15px;
 }
-.table:deep(.el-table td.el-table__cell div) {
+
+.section-count {
+  min-width: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.section-actions {
+  margin-left: auto;
+}
+
+.bangumi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.bangumi-grid :deep(.bangumi-item) {
+  margin-top: 0;
+}
+
+.rss-list {
+  overflow: hidden;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+  background-color: var(--el-bg-color);
+}
+
+.rss-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  transition: background-color 0.2s;
+}
+
+.rss-item + .rss-item {
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.rss-item:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.rss-index {
+  flex-shrink: 0;
+  width: 22px;
+  color: var(--el-text-color-placeholder);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.rss-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .pagination {
-  display: flex;
-  flex-direction: row;
   justify-content: center;
+  margin-top: 14px;
 }
+
 @media (max-width: 768px) {
-  .table {
-    width: 100%;
-    margin-top: 20px;
+  .result {
+    gap: 18px;
+  }
+
+  .bangumi-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+
+  .rss-item {
+    padding: 10px;
+  }
+
+  .rss-title {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .pagination {
+    margin-top: 10px;
   }
 }
 </style>

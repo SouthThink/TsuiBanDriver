@@ -156,6 +156,19 @@ export default {
   margin: 0 auto;
 }
 
+/* 2K 及以上大屏：放宽内容宽度，避免两侧出现大片黑边（参考 B 站宽屏布局） */
+@media screen and (min-width: 2000px) {
+  .video-layout {
+    max-width: 2400px;
+  }
+}
+
+@media screen and (min-width: 3000px) {
+  .video-layout {
+    max-width: 2600px;
+  }
+}
+
 .main-column {
   display: flex;
   flex-direction: column;
