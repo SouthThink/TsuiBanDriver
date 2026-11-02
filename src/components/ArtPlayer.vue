@@ -60,6 +60,9 @@ const KEY_LONG_PRESS_TIME = 500;
 // 音量/进度拖动中心提示：无操作后停留时长（ms）
 const CENTER_TOAST_HIDE_TIME = 500;
 
+// 暂停后控制栏（进度条）自动隐藏的等待时长（ms）
+const PAUSED_CONTROL_HIDE_TIME = 2000;
+
 // 中心提示图标
 const ICON_VOLUME = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12zM14 3.2v2.06a7 7 0 0 1 0 13.48v2.06a9 9 0 0 0 0-17.6z"/></svg>';
 const ICON_VOLUME_MUTE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm18.4 1.6L19 8.2l-2.4 2.4-2.4-2.4-1.4 1.4 2.4 2.4-2.4 2.4 1.4 1.4 2.4-2.4 2.4 2.4 1.4-1.4-2.4-2.4 2.4-2.4z"/></svg>';
@@ -148,6 +151,9 @@ export default {
       assSource: "",
       assScaleTimer: null,
       currentVideoId: "",
+      // 播放器里真正载入的那一集：换集请求期间它与 currentVideoId 不一致，
+      // 此时播放器里放的还是上一集，不能拿它的时间当作当前这集的进度
+      playingVideoId: "",
       // 已载入播放器的弹幕信息（{videoId, count}），用于判断后台拉到新弹幕时才重载
       danmukuLoaded: null,
     };
@@ -316,9 +322,11 @@ export default {
       const record = await loadPlayRecord(videoId);
       // 请求期间可能已切换到别的视频
       if (videoId !== this.currentVideoId) return;
-      // 标记已观看：沿用已保存的进度，避免开播瞬间把进度覆盖成 0；
-      // 写入后通知父组件刷新选集列表，让「已观看」状态立即一致
-      this.reportHistory(record).then(() => this.$emit("history-updated"));
+      // 标记已观看：有记录就沿用；没有记录就写 0（不能读播放器里的时间，
+      // 换集瞬间播放器里可能还是上一集，会把上一集的进度写到这一集）
+      this.reportHistory(record || { position: 0, duration: 0 }).then(() =>
+        this.$emit("history-updated")
+      );
       this.applyResumePosition(record);
     },
 
@@ -327,7 +335,11 @@ export default {
     reportHistory(progress) {
       const video = this.instance && this.instance.video;
       if (!this.currentVideoId) return Promise.resolve();
-      if (!video && !progress) return Promise.resolve();
+      // 不带进度时读的是播放器里的实时位置。换集过程中播放器里还是上一集
+      // （新的一集还没换源），读出来的时间属于别的集，不能写进当前这集
+      if (!progress && (!video || this.playingVideoId !== this.currentVideoId)) {
+        return Promise.resolve();
+      }
       const position = progress
         ? Number(progress.position) || 0
         : video.currentTime || 0;
@@ -346,6 +358,8 @@ export default {
     saveOnPageLeave() {
       const video = this.instance && this.instance.video;
       if (!video || !this.currentVideoId) return;
+      // 与 reportHistory 一致：播放器里放的必须是当前这一集
+      if (this.playingVideoId !== this.currentVideoId) return;
       savePlayRecordBeacon({
         videoId: this.currentVideoId,
         position: video.currentTime || 0,
@@ -363,7 +377,10 @@ export default {
       if (duration && position > duration - 15) return;
 
       const video = this.instance.video;
+      const videoId = this.currentVideoId;
       const seek = () => {
+        // 等待元数据期间可能已经切到别的集，不能把这一集的进度跳到别的集上
+        if (videoId !== this.currentVideoId) return;
         try {
           video.currentTime = position;
         } catch (error) {
@@ -476,6 +493,8 @@ export default {
         // 播放器实例不要被 Vue 响应式代理：Artplayer 的 plugins 上有不可配置属性，
         // 代理后读取插件会直接抛错（表现为换集时弹幕设置丢失、播放器被重建）
         this.instance = markRaw(new Artplayer(options));
+        // 播放器载入的就是当前这一集
+        this.playingVideoId = this.currentVideoId;
         // 应用浏览器里保存的字幕字号（内置字幕写 CSS 变量，ASS 在载入轨道时按比例缩放）
         this.applySubtitleFontSize(this.subtitleFontSize, false);
         this.syncSubtitleSettings();
@@ -515,6 +534,8 @@ export default {
         this.currentVideoId = newVideoId;
         this.$nextTick(() => {
           this.getVideoUrls(newVideoId).then(urls => {
+            // 期间可能又切了别的集，晚到的响应不能再建播放器
+            if (newVideoId !== this.currentVideoId) return;
             this.createPlayer(urls);
           });
         });
@@ -532,6 +553,8 @@ export default {
       this.currentVideoId = newVideoId;
       
       this.getVideoUrls(newVideoId).then(urls => {
+        // 期间可能又切了别的集，晚到的响应不能再覆盖播放器（否则会放错集）
+        if (newVideoId !== this.currentVideoId) return;
         this.externalFonts = urls.fonts || [];
         // 换集后字幕数量可能变化，同步改设置面板里的字幕相关项
         this.hasSubtitle = urls.subtitles.length > 0;
@@ -541,6 +564,8 @@ export default {
         
         try {
           this.instance.url = urls.streamUrl;
+          // 换源后播放器里放的就是这一集了，从这里开始读写进度都以它为准
+          this.playingVideoId = newVideoId;
           this.instance.poster = urls.posterUrl;
           
           if (urls.thumbnails) {
@@ -653,7 +678,7 @@ export default {
     },
     
     // 暂停时也自动隐藏控制栏：Artplayer 只在 timeupdate（仅播放中触发）里隐藏，
-    // 暂停后进度条会一直停留。这里在暂停后按同样的等待时长主动隐藏，
+    // 暂停后进度条会一直停留。这里在暂停 2 秒后主动隐藏，
     // 鼠标移动 / 悬停控制栏 / 操作设置面板时重新计时，继续播放后交还给 Artplayer
     bindControlAutoHide() {
       if (!this.instance) return;
@@ -669,7 +694,7 @@ export default {
             return;
           }
           art.controls.show = false;
-        }, Artplayer.CONTROL_HIDE_TIME);
+        }, PAUSED_CONTROL_HIDE_TIME);
       };
       art.on("video:pause", schedule);
       art.on("video:play", () => clearTimeout(this.controlHideTimer));
@@ -1288,12 +1313,6 @@ export default {
 };
 </script>
 
-<style scoped>
-.player:deep(.art-state) {
-  opacity: 0 !important;
-}
-</style>
-
 <style>
 /* 内置字幕默认字体：HarmonyOS Sans SC 完整版（与 ASS/SSA 的 jassub 渲染共用同一份字体文件，
    解决默认字体缺字问题）。优先用本机已安装的同名字体，没有才下载 webfont */
@@ -1313,6 +1332,12 @@ export default {
    注意：网页全屏时 Artplayer 会把播放器移到 body 下，scoped 样式会失效，因此这里用全局样式 */
 .art-video-player .art-video {
   object-fit: contain;
+}
+
+/* 暂停/播放状态图标（.art-mask 内的 .art-state）会挡住画面，统一隐藏。
+   网页全屏时 Artplayer 会把播放器移到 body，scoped 样式会失效，所以用全局样式 */
+.art-video-player .art-mask {
+  display: none !important;
 }
 
 .art-video-player .art-subtitle {
