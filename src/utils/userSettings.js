@@ -7,14 +7,32 @@ import { getUserData, saveUserSettings } from "@/api/yzrServer";
 // 语言 / 弹幕设置 / 时间表设置；下载页展示方式（downPageType）按需求留在浏览器
 export const SYNC_KEYS = ["lang", "danmuku", "timeTableSettings"];
 
+// 弹幕字号按设备单独保存在浏览器（手机和电脑需求不同），不参与后端同步
+const DANMAKU_LOCAL_ONLY_KEYS = ["fontSize"];
+
 let pushTimer = null;
+
+// 从弹幕设置 JSON 里剔除只属于当前设备的字段
+function stripDanmakuLocalOnly(raw) {
+  if (typeof raw !== "string") return raw;
+  try {
+    const settings = JSON.parse(raw);
+    if (!settings || typeof settings !== "object") return raw;
+    for (const key of DANMAKU_LOCAL_ONLY_KEYS) {
+      delete settings[key];
+    }
+    return JSON.stringify(settings);
+  } catch {
+    return raw;
+  }
+}
 
 function collectLocalSettings() {
   const settings = {};
   for (const key of SYNC_KEYS) {
     const raw = localStorage.getItem(key);
     if (raw !== null) {
-      settings[key] = raw;
+      settings[key] = key === "danmuku" ? stripDanmakuLocalOnly(raw) : raw;
     }
   }
   return settings;
@@ -23,7 +41,9 @@ function collectLocalSettings() {
 function applySettings(settings) {
   for (const key of SYNC_KEYS) {
     if (settings && settings[key] !== undefined) {
-      localStorage.setItem(key, settings[key]);
+      const value =
+        key === "danmuku" ? stripDanmakuLocalOnly(settings[key]) : settings[key];
+      localStorage.setItem(key, value);
     }
   }
 }

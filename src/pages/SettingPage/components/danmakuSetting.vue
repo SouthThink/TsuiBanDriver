@@ -84,6 +84,8 @@ interface Mark {
   label: string;
 }
 type Marks = Record<number, Mark | string>;
+// 弹幕字号按设备单独保存在浏览器，不写入会同步到后端的 danmuku
+const DANMAKU_FONT_SIZE_KEY = "danmakuFontSize";
 var danmuku = JSON.parse(localStorage.getItem("danmuku"));
 if (!danmuku) {
   danmuku = {
@@ -93,7 +95,6 @@ if (!danmuku) {
     antiOverlap: true,
     opacity: 1,
     margin: [0, 75],
-    fontSize: 25,
     speed: 10,
   };
   localStorage.setItem("danmuku", JSON.stringify(danmuku));
@@ -120,7 +121,27 @@ const marginMarks = reactive<Marks>({
   75: "3/4",
   100: translate("全屏"),
 });
-const fontSize = ref(danmuku.fontSize);
+// 优先读独立键；旧版本把字号放在 danmuku.fontSize 里，读取后迁移并从 danmuku 移除
+const storedFontSize = Number(localStorage.getItem(DANMAKU_FONT_SIZE_KEY));
+const legacyFontSize = Number(danmuku.fontSize);
+const fontSize = ref(
+  Number.isFinite(storedFontSize) && storedFontSize > 0
+    ? storedFontSize
+    : Number.isFinite(legacyFontSize) && legacyFontSize > 0
+      ? legacyFontSize
+      : 25
+);
+if (
+  !(Number.isFinite(storedFontSize) && storedFontSize > 0) &&
+  Number.isFinite(legacyFontSize) &&
+  legacyFontSize > 0
+) {
+  localStorage.setItem(DANMAKU_FONT_SIZE_KEY, String(fontSize.value));
+}
+if (danmuku.fontSize !== undefined) {
+  delete danmuku.fontSize;
+  localStorage.setItem("danmuku", JSON.stringify(danmuku));
+}
 const speedMap = {
   10: 0,
   7.5: 25,
@@ -146,6 +167,11 @@ const speed = ref(speedMap[danmuku.speed]);
 
 const saveSetting = (event) => {
 //   console.log(event, eval(event)._value);
+  if (event == "fontSize") {
+    // 弹幕字号只写浏览器独立键，不进入会同步后端的 danmuku
+    localStorage.setItem(DANMAKU_FONT_SIZE_KEY, String(fontSize.value));
+    return;
+  }
   if (event == "margin") {
     danmuku.margin[1] = marginMap[margin.value];
   } else if (event == "speed") {

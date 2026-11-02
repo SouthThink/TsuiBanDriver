@@ -203,6 +203,7 @@ export default {
   拖拽快进: "Drag to Seek",
   长按快进: "Long Press Speed Up",
   字幕偏移: "Subtitle Offset",
+  字幕字号: "Subtitle Font Size",
   开启: "On",
   关闭: "Off",
   获取字幕内容失败: "Failed to Get Subtitle Content",

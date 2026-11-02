@@ -30,3 +30,5 @@ coverage
 *.tsbuildinfo
 
 AGENT.md
+deploy.cmd
+deploy.ps1

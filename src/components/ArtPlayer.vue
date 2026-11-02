@@ -3,6 +3,7 @@
 </template>
 
 <script>
+import { markRaw } from "vue";
 import Artplayer from "artplayer";
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku";
 import tw from "artplayer/i18n/zh-tw";
@@ -40,9 +41,18 @@ const GESTURE_DEAD_ZONE = 16;
 // 字幕偏移范围：[当前值, 最小值, 最大值, 步长]（单位为秒）
 const SUBTITLE_OFFSET_RANGE = [0, -30, 30, 0.1];
 
-// 字幕相关设置项的名字：这两项按需从设置面板增删（没字幕就不显示开关，字幕关闭就不显示偏移）
+// 字幕字号范围：[当前值, 最小值, 最大值, 步长]（单位 px）
+const SUBTITLE_FONT_SIZE_RANGE = [18, 12, 48, 1];
+const DEFAULT_SUBTITLE_FONT_SIZE = 18;
+
+// 字幕相关设置项的名字：按需从设置面板增删（没字幕就不显示开关，字幕关闭就不显示偏移和字号）
 const SUBTITLE_SWITCH_NAME = "subtitle-switch";
+const SUBTITLE_FONT_SIZE_NAME = "subtitle-font-size";
 const SUBTITLE_OFFSET_NAME = "subtitle-offset";
+
+// 弹幕字号、字幕字号完全由浏览器持久化，不参与后端同步（手机和电脑的字号需求不同）
+const DANMAKU_FONT_SIZE_KEY = "danmakuFontSize";
+const SUBTITLE_FONT_SIZE_KEY = "subtitleFontSize";
 
 // 电脑端长按 →（右方向键）触发倍速的等待时长（ms）
 const KEY_LONG_PRESS_TIME = 500;
@@ -56,6 +66,47 @@ const ICON_VOLUME_MUTE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="
 const ICON_SEEK = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.75-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>';
 const ICON_PLAY = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+
+// libass 没有字号配置项，只能按比例改写 ASS 样式表里的 Fontsize 后重建轨道。
+// 只处理 [V4+ Styles] / [V4 Styles] 段落，其余内容原样保留。
+function scaleAssFontSize(content, ratio) {
+  if (!content || !Number.isFinite(ratio) || ratio === 1) return content;
+
+  const lines = content.split(/\r?\n/);
+  let inStyles = false;
+  let fontSizeIndex = 2;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (/^\[.*\]$/.test(trimmed)) {
+      inStyles = /^\[V4\+?\s*Styles\]$/i.test(trimmed);
+      continue;
+    }
+    if (!inStyles) continue;
+
+    if (/^Format\s*:/i.test(trimmed)) {
+      const fields = trimmed.slice(trimmed.indexOf(":") + 1).split(",");
+      const found = fields.findIndex(
+        (field) => field.trim().toLowerCase() === "fontsize"
+      );
+      if (found !== -1) fontSizeIndex = found;
+      continue;
+    }
+
+    if (/^Style\s*:/i.test(trimmed)) {
+      const colon = line.indexOf(":");
+      const fields = line.slice(colon + 1).split(",");
+      const fontSize = Number.parseFloat(fields[fontSizeIndex]);
+      if (!Number.isFinite(fontSize)) continue;
+      fields[fontSizeIndex] = (fontSize * ratio).toFixed(1);
+      lines[index] = `${line.slice(0, colon + 1)}${fields.join(",")}`;
+    }
+  }
+
+  return lines.join("\n");
+}
 
 export default {
   data() {
@@ -91,6 +142,11 @@ export default {
       subtitleVisible: true,
       // 当前字幕偏移（秒），作为唯一来源：srt/vtt 写进内置轨道，ass 写进 jassub 的 timeOffset
       subtitleOffset: 0,
+      // 字幕字号（px），只保存在浏览器，不参与后端同步
+      subtitleFontSize: DEFAULT_SUBTITLE_FONT_SIZE,
+      // ASS 原始文本与字号重建轨道用的节流计时器
+      assSource: "",
+      assScaleTimer: null,
       currentVideoId: "",
       // 已载入播放器的弹幕信息（{videoId, count}），用于判断后台拉到新弹幕时才重载
       danmukuLoaded: null,
@@ -115,6 +171,7 @@ export default {
     this.getLang();
     this.detectMobile();
     this.initGestureSettings();
+    this.subtitleFontSize = this.getStoredSubtitleFontSize();
     this.initPlayer();
     // 关闭标签页 / 刷新 / 跳转外部链接时保存播放进度
     window.addEventListener("pagehide", this.saveOnPageLeave);
@@ -144,6 +201,14 @@ export default {
       };
       
       const savedConfig = JSON.parse(localStorage.getItem("danmuku") || "{}");
+      // 弹幕字号只在本设备生效，优先读独立键；旧数据仍可能放在 danmuku.fontSize 里
+      const storedFontSize = Number(localStorage.getItem(DANMAKU_FONT_SIZE_KEY));
+      const fontSize =
+        Number.isFinite(storedFontSize) && storedFontSize > 0
+          ? storedFontSize
+          : savedConfig.fontSize !== undefined
+            ? savedConfig.fontSize
+            : baseConfig.fontSize;
       const userSettings = {
         visible: savedConfig.visible !== undefined ? savedConfig.visible : baseConfig.visible,
         modes: savedConfig.modes !== undefined ? savedConfig.modes : baseConfig.modes,
@@ -153,7 +218,7 @@ export default {
         synchronousPlayback: savedConfig.synchronousPlayback !== undefined ? savedConfig.synchronousPlayback : baseConfig.synchronousPlayback,
         opacity: savedConfig.opacity !== undefined ? savedConfig.opacity : baseConfig.opacity,
         margin: savedConfig.margin !== undefined ? savedConfig.margin : baseConfig.margin,
-        fontSize: savedConfig.fontSize !== undefined ? savedConfig.fontSize : baseConfig.fontSize,
+        fontSize,
       };
       
       if (this.isMobile) {
@@ -166,6 +231,23 @@ export default {
         emitter: false,
         ...userSettings,
       };
+    },
+
+    // 保存播放器里修改过的弹幕设置：字号写入独立键，其余写入 danmuku。
+    // 必须排除 mount / danmuku（函数或数组）以及按设备计算的 heatmap
+    saveDanmukuConfig(option) {
+      if (!option) return;
+      const { mount, danmuku, points, heatmap, fontSize, ...rest } = option;
+      const settings = JSON.stringify(rest);
+      if (localStorage.getItem("danmuku") !== settings) {
+        localStorage.setItem("danmuku", settings);
+      }
+      if (fontSize !== undefined) {
+        const value = String(fontSize);
+        if (localStorage.getItem(DANMAKU_FONT_SIZE_KEY) !== value) {
+          localStorage.setItem(DANMAKU_FONT_SIZE_KEY, value);
+        }
+      }
     },
 
     // 拉取该视频的弹幕（后端按本地文件 ID 找到对应弹幕库）：
@@ -391,7 +473,11 @@ export default {
           options.thumbnails = urls.thumbnails;
         }
         
-        this.instance = new Artplayer(options);
+        // 播放器实例不要被 Vue 响应式代理：Artplayer 的 plugins 上有不可配置属性，
+        // 代理后读取插件会直接抛错（表现为换集时弹幕设置丢失、播放器被重建）
+        this.instance = markRaw(new Artplayer(options));
+        // 应用浏览器里保存的字幕字号（内置字幕写 CSS 变量，ASS 在载入轨道时按比例缩放）
+        this.applySubtitleFontSize(this.subtitleFontSize, false);
         this.syncSubtitleSettings();
         this.bindGestureGuard();
         this.bindKeyFastForward();
@@ -402,11 +488,9 @@ export default {
         this.$emit("get-instance", this.instance);
         this.$emit("subtitle-list", urls.subtitles);
         
+        // 播放器设置面板里改动的弹幕设置立即持久化（手机端同样需要保存）
         this.instance.on("artplayerPluginDanmuku:config", (option) => {
-          if (!this.isMobile) {
-            const { mount, danmuku, ...rest } = option;
-            localStorage.setItem("danmuku", JSON.stringify(rest));
-          }
+          this.saveDanmukuConfig(option);
         });
         
         this.instance.on("error", (error) => {
@@ -440,6 +524,11 @@ export default {
       // 切换集数前先保存当前集进度（此时 currentVideoId 仍指向前一集）
       this.reportHistory();
 
+      // 同时把播放器里改过的弹幕设置存下来，换集后继续沿用
+      if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
+        this.saveDanmukuConfig(this.instance.plugins.artplayerPluginDanmuku.option);
+      }
+
       this.currentVideoId = newVideoId;
       
       this.getVideoUrls(newVideoId).then(urls => {
@@ -464,8 +553,12 @@ export default {
           if (this.instance.plugins && this.instance.plugins.artplayerPluginDanmuku) {
             const danmukuPlugin = this.instance.plugins.artplayerPluginDanmuku;
             if (typeof danmukuPlugin.load === 'function') {
+              // 换集后按浏览器里保存的设置重建配置，避免弹幕设置回到上一次的旧值
+              const nextConfig = this.getDanmukuConfig(newVideoId);
+              const { danmuku, ...settings } = nextConfig;
+              danmukuPlugin.config(settings);
               // 换弹幕源后走无参 load：带参数是往队列追加，会把上一集的弹幕留在里面
-              danmukuPlugin.option.danmuku = () => this.fetchDanmuku(newVideoId);
+              danmukuPlugin.option.danmuku = danmuku;
               danmukuPlugin.load();
             }
           }
@@ -877,11 +970,17 @@ export default {
       }
     },
     
-    // 字幕相关设置项的显示规则：当前视频有字幕才显示「字幕」开关，字幕显示时才显示「字幕偏移」
+    // 字幕相关设置项的显示规则：当前视频有字幕才显示「字幕」开关，
+    // 字幕显示时才显示「字幕字号」与「字幕偏移」
     syncSubtitleSettings() {
       if (!this.instance) return;
       this.syncSetting(SUBTITLE_SWITCH_NAME, this.hasSubtitle, () =>
         this.buildSubtitleSwitchSetting()
+      );
+      this.syncSetting(
+        SUBTITLE_FONT_SIZE_NAME,
+        this.hasSubtitle && this.subtitleVisible,
+        () => this.buildSubtitleFontSizeSetting()
       );
       this.syncSetting(
         SUBTITLE_OFFSET_NAME,
@@ -913,6 +1012,78 @@ export default {
         switch: this.subtitleVisible,
         onSwitch: this.subtitleChange,
       };
+    },
+    
+    // 字幕字号设置项（只保存在浏览器，不参与后端同步）
+    buildSubtitleFontSizeSetting() {
+      return {
+        name: SUBTITLE_FONT_SIZE_NAME,
+        html: this.translate("字幕字号"),
+        tooltip: `${this.subtitleFontSize}px`,
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48"><path fill="#ffffff" d="M9 40 21 10h6l12 30h-6.2l-3-8H18.2l-3 8zm10.8-13h9.4L24.5 13z"/><path fill="#ffffff" d="M32 32h6v8h-6z"/></svg>',
+        range: [this.subtitleFontSize, ...SUBTITLE_FONT_SIZE_RANGE.slice(1)],
+        onChange: (item) => {
+          this.applySubtitleFontSize(item.range[0]);
+          return `${item.range[0]}px`;
+        },
+      };
+    },
+
+    // 读取浏览器里保存的字幕字号
+    getStoredSubtitleFontSize() {
+      const saved = Number(localStorage.getItem(SUBTITLE_FONT_SIZE_KEY));
+      if (Number.isFinite(saved) && saved > 0) {
+        return Math.min(
+          Math.max(Math.round(saved), SUBTITLE_FONT_SIZE_RANGE[1]),
+          SUBTITLE_FONT_SIZE_RANGE[2]
+        );
+      }
+      return DEFAULT_SUBTITLE_FONT_SIZE;
+    },
+
+    // 应用字幕字号：内置字幕写 CSS 变量，ASS 需要按比例改写样式后重建轨道。
+    // persist 为 false 时只应用不写浏览器（初始化时使用）
+    applySubtitleFontSize(size, persist = true) {
+      const value = Math.min(
+        Math.max(Math.round(Number(size) || DEFAULT_SUBTITLE_FONT_SIZE), SUBTITLE_FONT_SIZE_RANGE[1]),
+        SUBTITLE_FONT_SIZE_RANGE[2]
+      );
+      this.subtitleFontSize = value;
+      if (persist) {
+        localStorage.setItem(SUBTITLE_FONT_SIZE_KEY, String(value));
+      }
+      if (this.instance) {
+        this.instance.cssVar("--art-subtitle-font-size", `${value}px`);
+      }
+      this.scheduleAssFontScale();
+    },
+
+    // 拖动滑块时不用每一帧都重建 ASS 轨道，停一下再重绘
+    scheduleAssFontScale() {
+      if (!this.jassub || !this.assSource) return;
+      clearTimeout(this.assScaleTimer);
+      this.assScaleTimer = setTimeout(() => {
+        this.assScaleTimer = null;
+        this.applyAssFontScale();
+      }, 150);
+    },
+
+    // 用缓存的 ASS 原文按当前字号重建轨道（比例以默认字号为 1 倍）
+    applyAssFontScale() {
+      const jassub = this.jassub;
+      if (!jassub || !this.assSource) return;
+      const content = scaleAssFontSize(
+        this.assSource,
+        this.subtitleFontSize / DEFAULT_SUBTITLE_FONT_SIZE
+      );
+      // 重建轨道后重新套用字幕偏移
+      jassub.timeOffset = this.subtitleOffset;
+      Promise.resolve(jassub.ready)
+        .then(() => jassub.renderer.setTrack(content))
+        .then(() => jassub.resize(true))
+        .catch((error) => {
+          console.error("[jassub] 更新字幕字号失败:", error);
+        });
     },
     
     // 字幕偏移设置项：Artplayer 内置项固定 ±10s，这里自己建一个 ±30s 的
@@ -967,7 +1138,8 @@ export default {
         encoding: "utf-8",
         escape: true,
         style: {
-          "font-size": "18px",
+          // 用 CSS 变量承载字号，播放器设置里的「字幕字号」改的是同一个变量
+          "font-size": "var(--art-subtitle-font-size)",
         },
       };
     },
@@ -980,6 +1152,8 @@ export default {
         this.applyAssSubtitle(item, notify);
         return;
       }
+      // 切到内置字幕 / 无字幕时释放 ASS 轨道和缓存的原文
+      this.assSource = "";
       this.releaseJassub();
       this.applyBuiltinSubtitle(item, notify);
     },
@@ -1019,10 +1193,18 @@ export default {
         const contentType = this.detectSubtitleType(content);
         if (contentType !== "ass") {
           console.warn(`[jassub] 该字幕内容实际是 ${contentType}，改走内置渲染:`, item.name);
+          this.assSource = "";
           this.releaseJassub();
           this.applyBuiltinSubtitle({ ...item, type: contentType }, notify);
           return;
         }
+        
+        // 缓存原文：调整字幕字号时据此按比例重建轨道
+        this.assSource = content;
+        const scaledContent = scaleAssFontSize(
+          content,
+          this.subtitleFontSize / DEFAULT_SUBTITLE_FONT_SIZE
+        );
         
         // 关闭内置字幕轨道，避免两套渲染同时显示
         this.applyBuiltinSubtitle(null);
@@ -1030,13 +1212,15 @@ export default {
         if (this.jassub) {
           // 复用已有 jassub 实例，仅替换字幕轨道
           await this.jassub.ready;
-          await this.jassub.renderer.setTrack(content);
+          await this.jassub.renderer.setTrack(scaledContent);
           await this.jassub.resize(true);
         } else {
-          this.jassub = artplayerPluginJassub({
-            subContent: content,
-            fonts: this.externalFonts,
-          })(this.instance).instance;
+          this.jassub = markRaw(
+            artplayerPluginJassub({
+              subContent: scaledContent,
+              fonts: this.externalFonts,
+            })(this.instance).instance
+          );
         }
         // 换轨道后套用当前的字幕偏移（jassub 每帧按 mediaTime + timeOffset 渲染）
         this.jassub.timeOffset = this.subtitleOffset;
@@ -1072,6 +1256,9 @@ export default {
     
     // 销毁 jassub 实例（切换视频时重建，以便重新加载新视频目录下的字体）
     resetJassub() {
+      clearTimeout(this.assScaleTimer);
+      this.assScaleTimer = null;
+      this.assSource = "";
       if (!this.jassub) return;
       try {
         this.jassub.destroy();
