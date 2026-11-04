@@ -56,9 +56,8 @@
   transform: scale(1.06);
 }
 
-/* 评分 / 观看进度角标 */
-.bangumi-item-score,
-.bangumi-item-watched {
+/* 评分角标 */
+.bangumi-item-score {
   position: absolute;
   z-index: 1;
   display: flex;
@@ -71,8 +70,7 @@
   border-radius: 4px;
   backdrop-filter: blur(4px);
 }
-.bangumi-item-score .el-text,
-.bangumi-item-watched .el-text {
+.bangumi-item-score .el-text {
   font-size: 12px;
   line-height: 18px;
   color: #fff;
@@ -84,9 +82,18 @@
 .bangumi-item-score .el-icon {
   color: #ffb020;
 }
-.bangumi-item-watched {
+/* 「新」角标：扫描发现新内容时显示，读过后消失 */
+.bangumi-item-new {
+  position: absolute;
+  z-index: 1;
   top: 6px;
   right: 6px;
+  padding: 1px 7px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #fff;
+  background-color: var(--el-color-danger);
+  border-radius: 4px;
 }
 
 /* 标题 */
@@ -107,8 +114,10 @@
   text-overflow: ellipsis;
   transition: color 0.25s ease;
 }
-/* 第二行：本地已有文件对应的最新集号（全 N 话） */
+/* 第二行：本地已有文件对应的最新集号与上次观看进度（全 N 话 · 上次看到 X 话） */
 .bangumi-item-info .bangumi-item-episode {
+  display: flex;
+  gap: 8px;
   height: 20px;
   font-size: 0.78rem;
   line-height: 20px;

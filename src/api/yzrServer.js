@@ -325,6 +325,16 @@ export function saveHistory(data) {
   });
 }
 
+// 标记番剧已读：首页卡片的「新」标签消失（已读状态按账户保存在后端）
+export function markAnimeRead(data) {
+  return request(BASE_URL,{
+    url: "/markAnimeRead",
+    method: "post",
+    data,
+    silent: true,
+  });
+}
+
 export function saveUserSettings(data) {
   return request(BASE_URL,{
     url: "/saveUserSettings",

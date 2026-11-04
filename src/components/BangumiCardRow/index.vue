@@ -12,27 +12,22 @@
         <el-icon><StarFilled /></el-icon>
         <el-text>{{ rating }}</el-text>
       </div>
-      <div class="bangumi-item-watched" v-if="episodeWatched !== 0">
-        <el-icon><Clock /></el-icon>
-        <el-text truncated v-if="episodeWatched != episodeTotal">
-          {{ translate("已看") + episodeWatched + translate("话") }}
-        </el-text>
-        <el-text v-else>{{ translate("已看到最新") }}</el-text>
-      </div>
+      <!-- 扫描发现新内容时提示，点开番剧后消失 -->
+      <div class="bangumi-item-new" v-if="isNew">{{ translate("新") }}</div>
     </div>
     <div class="bangumi-item-info">
       <div class="bangumi-item-title">{{ title }}</div>
-      <div class="bangumi-item-episode" v-if="episodeLatest > 0">
-        {{ translate("全") + episodeLatest + translate("话") }}
+      <div class="bangumi-item-episode" v-if="episodeLatest > 0 || episodeWatched > 0">
+        <span v-if="episodeLatest > 0">{{ translate("全") + episodeLatest + translate("话") }}</span>
+        <span v-if="episodeWatched > 0">{{ translate("看到") + episodeWatched + translate("话") }}</span>
       </div>
     </div>
   </div>
 </template>
 <script setup>
-import { onMounted } from "vue";
 import { translate } from "@/utils/translate";
 
-const props = defineProps({
+defineProps({
   imgUrl: String,
   title: String,
   rating: {
@@ -52,10 +47,11 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
-});
-
-onMounted(() => {
-  // console.log(props.rating);
+  // 是否有扫描发现的新内容（未被用户读过的「新」标签）
+  isNew: {
+    type: Boolean,
+    default: false,
+  },
 });
 </script>
 <style src="./index.css"></style>

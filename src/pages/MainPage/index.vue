@@ -68,6 +68,7 @@
             :episodeWatched="video.EpisodeWatched"
             :episodeTotal="video.EpisodeTotal"
             :episodeLatest="video.EpisodeLatest"
+            :isNew="video.IsNew === true"
             @click="openDetail(video)"
           />
         </div>
@@ -89,7 +90,7 @@ import { Search } from "@element-plus/icons-vue";
 import BangumiCardRow from "@/components/BangumiCardRow/index.vue";
 import "@/components/BangumiCardRow/index.css";
 import { translate } from "@/utils/translate";
-import { searchBangumi } from "@/api/yzrServer";
+import { searchBangumi, markAnimeRead } from "@/api/yzrServer";
 import { username } from "@/utils/user";
 
 const router = useRouter();
@@ -104,7 +105,16 @@ const navType = [
   { name: "评分排序", type: "rating" },
 ];
 
-const nav = ref("season");
+// 首页分类只保存在浏览器，不参与后端同步（各设备的浏览习惯不同）
+const NAV_KEY = "homeNav";
+
+// 读取上次选择的分类；值已失效（旧版本遗留）时回退到默认分类
+const getStoredNav = () => {
+  const saved = localStorage.getItem(NAV_KEY);
+  return navType.some((item) => item.type === saved) ? saved : "season";
+};
+
+const nav = ref(getStoredNav());
 const search = ref("");
 const loading = ref(true);
 const groups = ref([]);
@@ -141,8 +151,9 @@ const loadList = async (keyword = "") => {
   }
 };
 
-// 切换分类时保留当前搜索词
+// 切换分类时保留当前搜索词，并记住本次选择
 const onNavChange = () => {
+  localStorage.setItem(NAV_KEY, nav.value);
   clearTimeout(searchTimer);
   loadList(search.value.trim());
 };
@@ -160,8 +171,17 @@ onBeforeUnmount(() => {
   clearTimeout(searchTimer);
 });
 
-// 卡片点击进入番剧详情页
+// 卡片点击进入番剧详情页；打开即视为已读，清掉「新」并记到后端账户
 const openDetail = (video) => {
+  if (video.IsNew) {
+    video.IsNew = false;
+    if (username.value) {
+      markAnimeRead({
+        username: username.value,
+        animeId: video.AnimeId,
+      }).catch(() => {});
+    }
+  }
   router.push({
     name: "animeDetail",
     query: { animeId: video.AnimeId.toString() },

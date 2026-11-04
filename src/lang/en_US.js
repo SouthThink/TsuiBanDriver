@@ -209,6 +209,8 @@ export default {
   获取字幕内容失败: "Failed to Get Subtitle Content",
   已看到最新: "Seen Latest",
   已看: "Watched ",
+  看到: "Watched ",
+  新: "New",
   话: " episodes",
   全: "Total ",
   开始AI对话: "Start AI Chat",
